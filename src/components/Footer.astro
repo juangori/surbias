@@ -1,0 +1,17 @@
+---
+import { t, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i = t(locale);
+---
+
+<footer class="site-footer">
+  <p>{i.common.footer_text}</p>
+  <p>
+    <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener">{i.common.footer_coffee}</a>
+  </p>
+</footer>

@@ -1,0 +1,24 @@
+---
+import { t, localePath, LOCALES, LOCALE_NAMES, type Locale } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i = t(locale);
+---
+
+<header class="site-header">
+  <nav>
+    <a href={localePath(locale, '/')} class="site-logo">Surbias</a>
+    <ul class="nav-links">
+      <li><a href={localePath(locale, '/')}>{i.nav.home}</a></li>
+      <li><a href={localePath(locale, '/about')}>{i.nav.about}</a></li>
+      <li><a href={localePath(locale, '/post/new')} class="btn-cta">{i.nav.share}</a></li>
+      <li><a href={localePath(locale, '/login')}>{i.nav.login}</a></li>
+      <li><LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} /></li>
+    </ul>
+  </nav>
+</header>

@@ -1,0 +1,98 @@
+{
+  "site": {
+    "title": "Surbias",
+    "tagline": "The Survivorship Bias Destroyer",
+    "description": "Share your failure story. No happy ending needed. Just vent and feel less alone."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "share": "Share your story",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "admin": "Admin"
+  },
+  "categories": {
+    "all": "All",
+    "career": "Career",
+    "business": "Business",
+    "education": "Education",
+    "relationships": "Relationships",
+    "health": "Health",
+    "financial": "Financial",
+    "other": "Other"
+  },
+  "post": {
+    "share_title": "Share your story",
+    "share_subtitle": "No happy ending. No moral. Just your truth.",
+    "title_label": "Title",
+    "title_placeholder": "A short title for your story...",
+    "body_label": "Your story",
+    "body_placeholder": "Tell us what happened. No happy ending needed. Just vent...",
+    "category_label": "Category",
+    "anonymous_label": "Post anonymously",
+    "submit": "Share",
+    "posting_as_anonymous": "Posting anonymously",
+    "posting_as_user": "Posting as",
+    "ago": "ago",
+    "read_more": "Read more"
+  },
+  "reactions": {
+    "metoo": "Me too",
+    "hug": "Hug",
+    "strength": "Strength",
+    "respect": "Respect",
+    "solidarity": "Solidarity"
+  },
+  "auth": {
+    "login_title": "Sign in",
+    "login_subtitle": "Optional. You can post without an account.",
+    "email": "Email",
+    "password": "Password",
+    "login_button": "Sign in",
+    "register_button": "Create account",
+    "or": "or",
+    "google_login": "Continue with Google",
+    "no_account": "Don't have an account?",
+    "has_account": "Already have an account?"
+  },
+  "about": {
+    "title": "What is Surbias?",
+    "p1": "Surbias comes from a simple idea: enough of only seeing the winners.",
+    "p2": "Social media is full of success stories. The millionaire who started in a garage, the entrepreneur who never gave up, the athlete who overcame everything. But that's the 1%. What about the other 99%?",
+    "p3": "Here you can share your failure story. No happy ending. No perseverance tale. Just share and feel less alone. Because failing is NORMAL. Success is the exception.",
+    "p4": "This is called survivorship bias: we only see the survivors, those who made it through the filter. And that distorts our view of reality.",
+    "p5": "Surbias is your space to be real."
+  },
+  "moderation": {
+    "report": "Report",
+    "report_reason": "Why are you reporting this?",
+    "spam": "Spam",
+    "offensive": "Offensive",
+    "harmful": "Harmful",
+    "other": "Other",
+    "reported": "Reported",
+    "flagged": "This content was hidden due to community reports."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "empty": "No stories yet. Be the first!",
+    "previous": "Previous",
+    "next": "Next",
+    "footer_text": "Surbias — Because failing is normal.",
+    "footer_coffee": "Buy us a coffee",
+    "page": "Page"
+  },
+  "errors": {
+    "title_too_short": "Title is too short",
+    "title_too_long": "Title is too long (max 150 characters)",
+    "body_too_short": "Story is too short (min 20 characters)",
+    "body_too_long": "Story is too long (max 5000 characters)",
+    "too_many_urls": "Too many links (max 3)",
+    "blocked_content": "Content contains blocked words",
+    "rate_limited": "Too many posts. Try again later.",
+    "turnstile_failed": "Anti-bot verification failed. Reload the page.",
+    "generic": "Something went wrong. Try again."
+  }
+}

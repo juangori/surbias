@@ -1,0 +1,38 @@
+---
+import { LOCALES, LOCALE_NAMES, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  currentPath: string;
+}
+
+const { locale, currentPath } = Astro.props;
+
+function switchLocalePath(targetLocale: Locale): string {
+  // Remove current locale prefix if any
+  let path = currentPath;
+  for (const loc of LOCALES) {
+    if (loc !== 'es' && path.startsWith(`/${loc}/`)) {
+      path = path.slice(loc.length + 1);
+      break;
+    }
+    if (loc !== 'es' && path === `/${loc}`) {
+      path = '/';
+      break;
+    }
+  }
+  // Add target locale prefix
+  if (targetLocale === 'es') return path;
+  return `/${targetLocale}${path}`;
+}
+---
+
+<div class="lang-switcher">
+  <select onchange="window.location.href = this.value">
+    {LOCALES.map((loc) => (
+      <option value={switchLocalePath(loc)} selected={loc === locale}>
+        {LOCALE_NAMES[loc]}
+      </option>
+    ))}
+  </select>
+</div>

@@ -1,0 +1,89 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getLocaleFromUrl, timeAgo } from '../../i18n';
+import { getDb } from '../../db';
+import { posts } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { createAuth } from '../../lib/auth';
+import { env } from 'cloudflare:workers';
+
+const locale = getLocaleFromUrl(Astro.url);
+const db = getDb(env.DB);
+
+// Check admin access
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+const isAdmin = session?.user?.email === env.ADMIN_EMAIL;
+
+if (!isAdmin) {
+  return Astro.redirect('/login');
+}
+
+// Get flagged posts
+const flaggedPosts = await db
+  .select()
+  .from(posts)
+  .where(eq(posts.status, 'flagged'))
+  .orderBy(desc(posts.createdAt))
+  .limit(50);
+---
+
+<Base title="Admin">
+  <h1>Admin Panel</h1>
+  <p>Flagged posts: {flaggedPosts.length}</p>
+
+  {flaggedPosts.length === 0 ? (
+    <div class="notice notice-info">No flagged content to review.</div>
+  ) : (
+    flaggedPosts.map((post) => {
+      const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
+      return (
+        <div class="admin-card">
+          <div class="post-meta">
+            <span class="category-badge">{post.category}</span>
+            <span>Flags: {post.flagCount}</span>
+            <span>{timeAgo(createdAt, locale)}</span>
+          </div>
+          <h3>{post.title}</h3>
+          <p style="white-space: pre-wrap; margin-bottom: 1rem;">{post.body.slice(0, 500)}</p>
+          <div class="admin-actions">
+            <button
+              class="btn-cta"
+              style="font-size: 0.8rem; padding: 0.4rem 1rem;"
+              data-action="restore"
+              data-post-id={post.id}
+            >
+              Restore
+            </button>
+            <button
+              style="font-size: 0.8rem; padding: 0.4rem 1rem; background: var(--surbias-danger); color: white; border: none; border-radius: 2rem; cursor: pointer;"
+              data-action="delete"
+              data-post-id={post.id}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      );
+    })
+  )}
+</Base>
+
+<script>
+  document.querySelectorAll('[data-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const action = (btn as HTMLElement).dataset.action;
+      const postId = (btn as HTMLElement).dataset.postId;
+
+      const res = await fetch(`/api/admin/moderate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, action }),
+      });
+
+      if (res.ok) {
+        (btn as HTMLElement).closest('.admin-card')?.remove();
+      }
+    });
+  });
+</script>

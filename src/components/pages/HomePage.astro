@@ -1,0 +1,49 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import CategoryFilter from '../../components/CategoryFilter.astro';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { getDb } from '../../db';
+import { posts } from '../../db/schema';
+import { desc, eq, and, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+const db = getDb(env.DB);
+
+const url = Astro.url;
+const category = url.searchParams.get('category');
+const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+const perPage = 20;
+
+const conditions = [eq(posts.status, 'published')];
+if (category) conditions.push(eq(posts.category, category));
+const where = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+const results = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage).offset((page - 1) * perPage);
+const countResult = await db.select({ count: sql<number>`count(*)` }).from(posts).where(where);
+const total = countResult[0]?.count || 0;
+const totalPages = Math.ceil(total / perPage);
+---
+
+<Base>
+  <div class="hero">
+    <h1>{i.site.tagline}</h1>
+    <p class="tagline">{i.site.description}</p>
+    <a href={localePath(locale, '/post/new')} class="btn-cta">{i.nav.share}</a>
+  </div>
+  <CategoryFilter locale={locale} activeCategory={category || undefined} />
+  {results.length === 0 ? (
+    <div class="notice notice-info">{i.common.empty}</div>
+  ) : (
+    results.map((post) => <PostCard locale={locale} post={post} />)
+  )}
+  {totalPages > 1 && (
+    <div class="pagination">
+      {page > 1 && <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}`}>{i.common.previous}</a>}
+      <span>{i.common.page} {page} / {totalPages}</span>
+      {page < totalPages && <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}`}>{i.common.next}</a>}
+    </div>
+  )}
+</Base>

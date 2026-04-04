@@ -1,0 +1,98 @@
+{
+  "site": {
+    "title": "Surbias",
+    "tagline": "Le destructeur du biais de survie",
+    "description": "Partagez votre histoire d'échec. Pas de happy end. Videz votre sac et sentez-vous moins seul."
+  },
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "share": "Partagez votre histoire",
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "admin": "Admin"
+  },
+  "categories": {
+    "all": "Toutes",
+    "career": "Carrière",
+    "business": "Business",
+    "education": "Études",
+    "relationships": "Relations",
+    "health": "Santé",
+    "financial": "Finances",
+    "other": "Autre"
+  },
+  "post": {
+    "share_title": "Partagez votre histoire",
+    "share_subtitle": "Pas de happy end. Pas de morale. Juste votre vérité.",
+    "title_label": "Titre",
+    "title_placeholder": "Un titre court pour votre histoire...",
+    "body_label": "Votre histoire",
+    "body_placeholder": "Racontez ce qui s'est passé. Pas besoin de happy end. Videz votre sac...",
+    "category_label": "Catégorie",
+    "anonymous_label": "Publier anonymement",
+    "submit": "Partager",
+    "posting_as_anonymous": "Publication anonyme",
+    "posting_as_user": "Publié par",
+    "ago": "il y a",
+    "read_more": "Lire la suite"
+  },
+  "reactions": {
+    "metoo": "Moi aussi",
+    "hug": "Câlin",
+    "strength": "Force",
+    "respect": "Respect",
+    "solidarity": "Solidarité"
+  },
+  "auth": {
+    "login_title": "Se connecter",
+    "login_subtitle": "Optionnel. Vous pouvez publier sans compte.",
+    "email": "Email",
+    "password": "Mot de passe",
+    "login_button": "Se connecter",
+    "register_button": "Créer un compte",
+    "or": "ou",
+    "google_login": "Continuer avec Google",
+    "no_account": "Pas de compte ?",
+    "has_account": "Déjà un compte ?"
+  },
+  "about": {
+    "title": "Qu'est-ce que Surbias ?",
+    "p1": "Surbias est né d'une idée simple : assez de ne voir que les gagnants.",
+    "p2": "Les réseaux sociaux sont pleins d'histoires de réussite. Le millionnaire qui a commencé dans un garage, l'entrepreneur qui n'a jamais abandonné. Mais c'est le 1%. Et les 99% restants ?",
+    "p3": "Ici vous pouvez partager votre histoire d'échec. Pas de happy end. Pas d'histoire de persévérance. Partagez et sentez-vous moins seul. Parce qu'échouer, c'est NORMAL. Le succès est l'exception.",
+    "p4": "C'est ce qu'on appelle le biais de survie : on ne voit que les survivants, ceux qui ont passé le filtre. Et cela déforme notre vision de la réalité.",
+    "p5": "Surbias est votre espace pour être vrai."
+  },
+  "moderation": {
+    "report": "Signaler",
+    "report_reason": "Pourquoi signalez-vous ceci ?",
+    "spam": "Spam",
+    "offensive": "Offensant",
+    "harmful": "Nuisible",
+    "other": "Autre",
+    "reported": "Signalé",
+    "flagged": "Ce contenu a été masqué suite aux signalements de la communauté."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Quelque chose s'est mal passé",
+    "empty": "Pas encore d'histoires. Soyez le premier !",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "footer_text": "Surbias — Parce qu'échouer, c'est normal.",
+    "footer_coffee": "Offrez-nous un café",
+    "page": "Page"
+  },
+  "errors": {
+    "title_too_short": "Le titre est trop court",
+    "title_too_long": "Le titre est trop long (max 150 caractères)",
+    "body_too_short": "L'histoire est trop courte (min 20 caractères)",
+    "body_too_long": "L'histoire est trop longue (max 5000 caractères)",
+    "too_many_urls": "Trop de liens (max 3)",
+    "blocked_content": "Le contenu contient des mots bloqués",
+    "rate_limited": "Trop de publications. Réessayez plus tard.",
+    "turnstile_failed": "Vérification anti-bot échouée. Rechargez la page.",
+    "generic": "Quelque chose s'est mal passé. Réessayez."
+  }
+}

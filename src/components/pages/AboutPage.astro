@@ -1,0 +1,18 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getLocaleFromUrl, t } from '../../i18n';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+---
+
+<Base title={i.about.title}>
+  <div class="about-content">
+    <h1>{i.about.title}</h1>
+    <p>{i.about.p1}</p>
+    <p>{i.about.p2}</p>
+    <p>{i.about.p3}</p>
+    <p>{i.about.p4}</p>
+    <p><strong>{i.about.p5}</strong></p>
+  </div>
+</Base>

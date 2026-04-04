@@ -1,0 +1,75 @@
+---
+import { t, type Locale } from '../i18n';
+import { REACTION_TYPES } from '../db/schema';
+
+interface Props {
+  locale: Locale;
+  postId: string;
+  reactionCounts: Record<string, number>;
+  userReaction?: string | null;
+}
+
+const { locale, postId, reactionCounts, userReaction } = Astro.props;
+const i = t(locale);
+
+const reactionEmojis: Record<string, string> = {
+  metoo: '\u{1F64B}',
+  hug: '\u{1FAC2}',
+  strength: '\u{1F4AA}',
+  respect: '\u{1F3A9}',
+  solidarity: '\u{1F91D}',
+};
+---
+
+<div class="reaction-bar" data-post-id={postId}>
+  {REACTION_TYPES.map((type) => (
+    <button
+      class:list={['reaction-btn', { reacted: userReaction === type }]}
+      data-reaction={type}
+      data-post-id={postId}
+      title={i.reactions[type as keyof typeof i.reactions]}
+    >
+      <span>{reactionEmojis[type]}</span>
+      <span>{i.reactions[type as keyof typeof i.reactions]}</span>
+      <span class="reaction-count">{reactionCounts[type] || 0}</span>
+    </button>
+  ))}
+</div>
+
+<script>
+  document.querySelectorAll('.reaction-btn[data-reaction]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const postId = (btn as HTMLElement).dataset.postId;
+      const type = (btn as HTMLElement).dataset.reaction;
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/react`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type }),
+        });
+
+        if (res.ok) {
+          const data = await res.json() as { reactionCounts: Record<string, number> };
+          // Update all reaction counts for this post
+          const bar = btn.closest('.reaction-bar');
+          if (bar) {
+            bar.querySelectorAll('.reaction-btn').forEach((b) => {
+              const rType = (b as HTMLElement).dataset.reaction;
+              if (rType) {
+                const countEl = b.querySelector('.reaction-count');
+                if (countEl) {
+                  countEl.textContent = String(data.reactionCounts[rType] || 0);
+                }
+              }
+            });
+          }
+          // Toggle reacted state
+          btn.classList.toggle('reacted');
+        }
+      } catch {
+        // Silently fail - not critical
+      }
+    });
+  });
+</script>

@@ -1,0 +1,18 @@
+{
+  "name": "surbias",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "./dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "surbias-db",
+      "database_id": "REPLACE_WITH_ACTUAL_D1_ID"
+    }
+  ],
+  "vars": {
+    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY",
+    "BETTER_AUTH_URL": "https://surbias.com",
+    "ADMIN_EMAIL": "admin@surbias.com"
+  }
+}

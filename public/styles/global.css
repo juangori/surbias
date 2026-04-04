@@ -1,0 +1,459 @@
+/* Surbias - Custom styles on top of Pico CSS */
+
+:root {
+  --surbias-primary: #6366f1;
+  --surbias-primary-hover: #4f46e5;
+  --surbias-warm: #f59e0b;
+  --surbias-bg: #fafaf9;
+  --surbias-card-bg: #ffffff;
+  --surbias-text: #1c1917;
+  --surbias-text-muted: #78716c;
+  --surbias-border: #e7e5e4;
+  --surbias-success: #22c55e;
+  --surbias-danger: #ef4444;
+}
+
+/* Override Pico defaults */
+:root {
+  --pico-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  --pico-border-radius: 0.75rem;
+  --pico-primary: var(--surbias-primary);
+  --pico-primary-hover: var(--surbias-primary-hover);
+}
+
+body {
+  background-color: var(--surbias-bg);
+  color: var(--surbias-text);
+}
+
+/* Header */
+.site-header {
+  background: white;
+  border-bottom: 1px solid var(--surbias-border);
+  padding: 0.75rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--surbias-primary);
+  text-decoration: none;
+}
+
+.site-logo:hover {
+  color: var(--surbias-primary-hover);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--surbias-text-muted);
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--surbias-primary);
+}
+
+/* Main content */
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* CTA Button */
+.btn-cta {
+  display: inline-block;
+  background: var(--surbias-primary);
+  color: white !important;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-cta:hover {
+  background: var(--surbias-primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Hero section */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  margin-bottom: 2rem;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--surbias-text);
+}
+
+.hero .tagline {
+  font-size: 1.2rem;
+  color: var(--surbias-text-muted);
+  margin-bottom: 2rem;
+}
+
+/* Category filter pills */
+.category-filter {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.category-pill {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  background: white;
+  color: var(--surbias-text-muted);
+  border: 1px solid var(--surbias-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-pill:hover,
+.category-pill.active {
+  background: var(--surbias-primary);
+  color: white;
+  border-color: var(--surbias-primary);
+}
+
+/* Post cards */
+.post-card {
+  background: var(--surbias-card-bg);
+  border: 1px solid var(--surbias-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.post-card h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.post-card h3 a {
+  text-decoration: none;
+  color: var(--surbias-text);
+}
+
+.post-card h3 a:hover {
+  color: var(--surbias-primary);
+}
+
+.post-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--surbias-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.post-meta .category-badge {
+  background: #f3f4f6;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+}
+
+.post-body-preview {
+  color: var(--surbias-text);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Reaction bar */
+.reaction-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  background: #f9fafb;
+  border: 1px solid var(--surbias-border);
+  cursor: pointer;
+  color: var(--surbias-text-muted);
+  transition: all 0.2s;
+}
+
+.reaction-btn:hover {
+  background: #ede9fe;
+  border-color: var(--surbias-primary);
+  color: var(--surbias-primary);
+}
+
+.reaction-btn.reacted {
+  background: #ede9fe;
+  border-color: var(--surbias-primary);
+  color: var(--surbias-primary);
+}
+
+.reaction-count {
+  font-weight: 600;
+}
+
+/* Report button */
+.report-btn {
+  background: none;
+  border: none;
+  color: var(--surbias-text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin-left: auto;
+}
+
+.report-btn:hover {
+  color: var(--surbias-danger);
+}
+
+/* Footer */
+.site-footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--surbias-text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--surbias-border);
+  margin-top: 3rem;
+}
+
+.site-footer a {
+  color: var(--surbias-primary);
+}
+
+/* Language switcher */
+.lang-switcher {
+  position: relative;
+}
+
+.lang-switcher select {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--surbias-border);
+  border-radius: 0.5rem;
+  padding: 0.3rem 1.5rem 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--surbias-text-muted);
+  cursor: pointer;
+}
+
+/* Form styles */
+.post-form {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.post-form textarea {
+  min-height: 200px;
+  resize: vertical;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Alert / notice */
+.notice {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.notice-info {
+  background: #ede9fe;
+  color: var(--surbias-primary);
+}
+
+.notice-error {
+  background: #fef2f2;
+  color: var(--surbias-danger);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.pagination a,
+.pagination span {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.pagination a {
+  background: white;
+  border: 1px solid var(--surbias-border);
+  color: var(--surbias-primary);
+}
+
+.pagination a:hover {
+  background: #f3f4f6;
+}
+
+/* Flagged overlay */
+.flagged-notice {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  color: #92400e;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero .tagline {
+    font-size: 1rem;
+  }
+
+  .nav-links {
+    gap: 0.5rem;
+  }
+
+  .post-card {
+    padding: 1rem;
+  }
+
+  .form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Auth page */
+.auth-page {
+  max-width: 400px;
+  margin: 2rem auto;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  color: var(--surbias-text-muted);
+  font-size: 0.9rem;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--surbias-border);
+  border-radius: 0.5rem;
+  background: white;
+  color: var(--surbias-text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-google:hover {
+  background: #f3f4f6;
+}
+
+/* Admin panel */
+.admin-card {
+  background: white;
+  border: 1px solid var(--surbias-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Honeypot - hidden from real users */
+.ohnohoney {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0;
+  width: 0;
+  z-index: -1;
+}
+
+/* About page */
+.about-content {
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.about-content h1 {
+  margin-bottom: 1.5rem;
+}
+
+.about-content p {
+  margin-bottom: 1.25rem;
+  color: var(--surbias-text);
+}

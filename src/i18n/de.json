@@ -1,0 +1,98 @@
+{
+  "site": {
+    "title": "Surbias",
+    "tagline": "Der Survivorship-Bias-Zerstörer",
+    "description": "Teile deine Misserfolgsgeschichte. Kein Happy End nötig. Lass es raus und fühl dich weniger allein."
+  },
+  "nav": {
+    "home": "Startseite",
+    "about": "Über uns",
+    "share": "Teile deine Geschichte",
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "admin": "Admin"
+  },
+  "categories": {
+    "all": "Alle",
+    "career": "Karriere",
+    "business": "Geschäft",
+    "education": "Bildung",
+    "relationships": "Beziehungen",
+    "health": "Gesundheit",
+    "financial": "Finanzen",
+    "other": "Sonstiges"
+  },
+  "post": {
+    "share_title": "Teile deine Geschichte",
+    "share_subtitle": "Kein Happy End. Keine Moral. Nur deine Wahrheit.",
+    "title_label": "Titel",
+    "title_placeholder": "Ein kurzer Titel für deine Geschichte...",
+    "body_label": "Deine Geschichte",
+    "body_placeholder": "Erzähl, was passiert ist. Kein Happy End nötig. Lass es einfach raus...",
+    "category_label": "Kategorie",
+    "anonymous_label": "Anonym posten",
+    "submit": "Teilen",
+    "posting_as_anonymous": "Anonym posten",
+    "posting_as_user": "Posten als",
+    "ago": "vor",
+    "read_more": "Weiterlesen"
+  },
+  "reactions": {
+    "metoo": "Ich auch",
+    "hug": "Umarmung",
+    "strength": "Stärke",
+    "respect": "Respekt",
+    "solidarity": "Solidarität"
+  },
+  "auth": {
+    "login_title": "Anmelden",
+    "login_subtitle": "Optional. Du kannst auch ohne Konto posten.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "login_button": "Anmelden",
+    "register_button": "Konto erstellen",
+    "or": "oder",
+    "google_login": "Weiter mit Google",
+    "no_account": "Kein Konto?",
+    "has_account": "Bereits ein Konto?"
+  },
+  "about": {
+    "title": "Was ist Surbias?",
+    "p1": "Surbias entstand aus einer einfachen Idee: Schluss damit, nur die Gewinner zu sehen.",
+    "p2": "Soziale Medien sind voll von Erfolgsgeschichten. Der Millionär, der in einer Garage angefangen hat, der Unternehmer, der nie aufgegeben hat. Aber das sind nur 1%. Was ist mit den anderen 99%?",
+    "p3": "Hier kannst du deine Misserfolgsgeschichte teilen. Kein Happy End. Keine Durchhaltestory. Einfach teilen und sich weniger allein fühlen. Denn Scheitern ist NORMAL. Erfolg ist die Ausnahme.",
+    "p4": "Das nennt man Survivorship Bias: Wir sehen nur die Überlebenden, die es durch den Filter geschafft haben. Und das verzerrt unsere Sicht auf die Realität.",
+    "p5": "Surbias ist dein Raum, um echt zu sein."
+  },
+  "moderation": {
+    "report": "Melden",
+    "report_reason": "Warum meldest du das?",
+    "spam": "Spam",
+    "offensive": "Beleidigend",
+    "harmful": "Schädlich",
+    "other": "Sonstiges",
+    "reported": "Gemeldet",
+    "flagged": "Dieser Inhalt wurde aufgrund von Community-Meldungen ausgeblendet."
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Etwas ist schiefgelaufen",
+    "empty": "Noch keine Geschichten. Sei der Erste!",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "footer_text": "Surbias — Weil Scheitern normal ist.",
+    "footer_coffee": "Kauf uns einen Kaffee",
+    "page": "Seite"
+  },
+  "errors": {
+    "title_too_short": "Titel ist zu kurz",
+    "title_too_long": "Titel ist zu lang (max. 150 Zeichen)",
+    "body_too_short": "Geschichte ist zu kurz (min. 20 Zeichen)",
+    "body_too_long": "Geschichte ist zu lang (max. 5000 Zeichen)",
+    "too_many_urls": "Zu viele Links (max. 3)",
+    "blocked_content": "Inhalt enthält gesperrte Wörter",
+    "rate_limited": "Zu viele Beiträge. Versuche es später erneut.",
+    "turnstile_failed": "Anti-Bot-Überprüfung fehlgeschlagen. Seite neu laden.",
+    "generic": "Etwas ist schiefgelaufen. Versuche es erneut."
+  }
+}

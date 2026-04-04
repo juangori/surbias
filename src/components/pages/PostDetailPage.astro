@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import ReactionBar from '../../components/ReactionBar.astro';
+import { getLocaleFromUrl, t, timeAgo, localePath } from '../../i18n';
+import { getDb } from '../../db';
+import { posts } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+interface Props {
+  postId: string;
+}
+
+const { postId } = Astro.props;
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+const db = getDb(env.DB);
+
+const result = await db.select().from(posts).where(eq(posts.id, postId));
+const post = result[0];
+
+if (!post) {
+  return Astro.redirect(localePath(locale, '/'));
+}
+
+const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
+const reactionCounts = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
+const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
+const isFlagged = post.status === 'flagged';
+---
+
+<Base title={post.title}>
+  <article style="max-width: 700px; margin: 0 auto;">
+    {isFlagged && (
+      <div class="flagged-notice">{i.moderation.flagged}</div>
+    )}
+
+    {!isFlagged && (
+      <>
+        <div class="post-meta" style="margin-bottom: 1rem;">
+          <span class="category-badge">{categoryLabel}</span>
+          <span>{post.isAnonymous ? '---' : 'User'}</span>
+          <span>{timeAgo(createdAt, locale)}</span>
+        </div>
+
+        <h1 style="margin-bottom: 1rem;">{post.title}</h1>
+
+        <div style="line-height: 1.8; margin-bottom: 2rem; white-space: pre-wrap;">{post.body}</div>
+
+        <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
+
+        <div style="margin-top: 1.5rem; text-align: right;">
+          <button class="report-btn" onclick={`reportPost('${post.id}')`}>
+            {i.moderation.report}
+          </button>
+        </div>
+      </>
+    )}
+
+    <div style="margin-top: 2rem;">
+      <a href={localePath(locale, '/')} style="color: var(--surbias-primary);">
+        &larr; {i.nav.home}
+      </a>
+    </div>
+  </article>
+</Base>
+
+<script is:inline>
+  async function reportPost(postId) {
+    const reason = prompt('Reason: spam, offensive, harmful, other');
+    if (!reason) return;
+    const validReasons = ['spam', 'offensive', 'harmful', 'other'];
+    const cleanReason = reason.toLowerCase().trim();
+    if (!validReasons.includes(cleanReason)) {
+      alert('Invalid reason. Use: spam, offensive, harmful, or other');
+      return;
+    }
+    try {
+      const res = await fetch('/api/posts/' + postId + '/flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: cleanReason }),
+      });
+      if (res.ok) {
+        alert('Reported. Thank you.');
+      } else if (res.status === 409) {
+        alert('Already reported.');
+      }
+    } catch {}
+  }
+</script>

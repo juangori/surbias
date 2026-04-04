@@ -1,0 +1,98 @@
+{
+  "site": {
+    "title": "Surbias",
+    "tagline": "O destruidor do viés de sobrevivência",
+    "description": "Compartilhe sua história de fracasso. Sem final feliz. Apenas desabafe e sinta-se menos sozinho."
+  },
+  "nav": {
+    "home": "Início",
+    "about": "Sobre",
+    "share": "Compartilhe sua história",
+    "login": "Entrar",
+    "logout": "Sair",
+    "admin": "Admin"
+  },
+  "categories": {
+    "all": "Todas",
+    "career": "Carreira",
+    "business": "Negócios",
+    "education": "Estudos",
+    "relationships": "Relacionamentos",
+    "health": "Saúde",
+    "financial": "Finanças",
+    "other": "Outro"
+  },
+  "post": {
+    "share_title": "Compartilhe sua história",
+    "share_subtitle": "Sem final feliz. Sem moral. Apenas sua verdade.",
+    "title_label": "Título",
+    "title_placeholder": "Um título curto para sua história...",
+    "body_label": "Sua história",
+    "body_placeholder": "Conte o que aconteceu. Sem necessidade de final feliz. Apenas desabafe...",
+    "category_label": "Categoria",
+    "anonymous_label": "Publicar anonimamente",
+    "submit": "Compartilhar",
+    "posting_as_anonymous": "Publicando anonimamente",
+    "posting_as_user": "Publicando como",
+    "ago": "atrás",
+    "read_more": "Ler mais"
+  },
+  "reactions": {
+    "metoo": "Eu também",
+    "hug": "Abraço",
+    "strength": "Força",
+    "respect": "Respeito",
+    "solidarity": "Solidariedade"
+  },
+  "auth": {
+    "login_title": "Entrar",
+    "login_subtitle": "Opcional. Você pode publicar sem conta.",
+    "email": "Email",
+    "password": "Senha",
+    "login_button": "Entrar",
+    "register_button": "Criar conta",
+    "or": "ou",
+    "google_login": "Continuar com Google",
+    "no_account": "Não tem conta?",
+    "has_account": "Já tem conta?"
+  },
+  "about": {
+    "title": "O que é Surbias?",
+    "p1": "Surbias nasceu de uma ideia simples: chega de ver apenas os vencedores.",
+    "p2": "As redes sociais estão cheias de histórias de sucesso. O milionário que começou numa garagem, o empreendedor que nunca desistiu. Mas isso é 1%. E os outros 99%?",
+    "p3": "Aqui você pode compartilhar sua história de fracasso. Sem final feliz. Sem história de perseverança. Apenas compartilhe e sinta-se menos sozinho. Porque fracassar é NORMAL. O sucesso é a exceção.",
+    "p4": "Isso se chama viés de sobrevivência: só vemos os sobreviventes, os que passaram pelo filtro. E isso distorce nossa visão da realidade.",
+    "p5": "Surbias é seu espaço para ser real."
+  },
+  "moderation": {
+    "report": "Denunciar",
+    "report_reason": "Por que você está denunciando isso?",
+    "spam": "Spam",
+    "offensive": "Ofensivo",
+    "harmful": "Prejudicial",
+    "other": "Outro",
+    "reported": "Denunciado",
+    "flagged": "Este conteúdo foi ocultado devido a denúncias da comunidade."
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Algo deu errado",
+    "empty": "Nenhuma história ainda. Seja o primeiro!",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "footer_text": "Surbias — Porque fracassar é normal.",
+    "footer_coffee": "Pague-nos um café",
+    "page": "Página"
+  },
+  "errors": {
+    "title_too_short": "O título é muito curto",
+    "title_too_long": "O título é muito longo (máx. 150 caracteres)",
+    "body_too_short": "A história é muito curta (mín. 20 caracteres)",
+    "body_too_long": "A história é muito longa (máx. 5000 caracteres)",
+    "too_many_urls": "Muitos links (máx. 3)",
+    "blocked_content": "O conteúdo contém palavras bloqueadas",
+    "rate_limited": "Muitas publicações. Tente novamente mais tarde.",
+    "turnstile_failed": "Verificação anti-bot falhou. Recarregue a página.",
+    "generic": "Algo deu errado. Tente novamente."
+  }
+}
