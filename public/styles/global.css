@@ -838,6 +838,7 @@ h1, h2, h3, h4, h5, h6 {
 .post-form input,
 .post-form textarea,
 .post-form select {
+  width: auto;
   background: var(--surbias-card-bg);
   border: 1.5px solid var(--surbias-border);
   border-radius: var(--radius-md);
