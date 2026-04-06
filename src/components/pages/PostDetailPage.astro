@@ -47,7 +47,7 @@ const isFlagged = post.status === 'flagged';
   <div class="home-content">
     <aside class="sidebar">
       <div class="sidebar-card">
-        <p class="sidebar-title">Categories</p>
+        <p class="sidebar-title">{i.common.categories_title}</p>
         <CategoryFilter locale={locale} sidebar={true} />
       </div>
     </aside>
@@ -63,7 +63,7 @@ const isFlagged = post.status === 'flagged';
           <div class="post-meta" style="margin-bottom: 1.25rem;">
             <span class="category-badge">{categoryLabel}</span>
             <span class="post-meta-sep">&bull;</span>
-            <span>{post.isAnonymous ? '---' : 'User'}</span>
+            <span>{post.isAnonymous ? '---' : i.common.anonymous}</span>
             <span class="post-meta-sep">&bull;</span>
             <span>{timeAgo(createdAt, locale)}</span>
           </div>
@@ -79,17 +79,17 @@ const isFlagged = post.status === 'flagged';
 
           <!-- Comments section -->
           <div class="comments-section">
-            <h3 class="comments-title">Comments ({postComments.length})</h3>
+            <h3 class="comments-title">{i.common.comments} ({postComments.length})</h3>
 
             <!-- Comment form -->
             <div class="comment-form-wrapper">
-              <textarea id="comment-body" placeholder="Write a comment..." maxlength="2000" rows="2" class="comment-input"></textarea>
+              <textarea id="comment-body" placeholder={i.common.write_comment} maxlength="2000" rows="2" class="comment-input"></textarea>
               <div class="comment-form-footer">
                 <label class="anonymous-toggle">
                   <input type="checkbox" id="comment-anon" checked class="toggle-checkbox" />
-                  <span class="toggle-label">Anonymous</span>
+                  <span class="toggle-label">{i.common.anonymous}</span>
                 </label>
-                <button id="submit-comment" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Comment</button>
+                <button id="submit-comment" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.85rem;">{i.common.comment}</button>
               </div>
             </div>
 
@@ -100,7 +100,7 @@ const isFlagged = post.status === 'flagged';
                 return (
                   <div class="comment-card">
                     <div class="comment-meta">
-                      <span>{c.isAnonymous ? 'Anonymous' : (c.authorName || 'Anonymous')}</span>
+                      <span>{c.isAnonymous ? i.common.anonymous : (c.authorName || i.common.anonymous)}</span>
                       <span class="post-meta-sep">&bull;</span>
                       <span>{timeAgo(cDate, locale)}</span>
                     </div>
@@ -113,7 +113,7 @@ const isFlagged = post.status === 'flagged';
 
           <!-- Report -->
           <div class="post-detail-actions">
-            <button class="report-btn" onclick={`reportPost('${post.id}')`}>
+            <button class="report-btn">
               &#9872; {i.moderation.report}
             </button>
           </div>
@@ -123,32 +123,30 @@ const isFlagged = post.status === 'flagged';
   </div>
 </Base>
 
-<script is:inline>
-  async function reportPost(postId) {
-    const reason = prompt('Reason: spam, offensive, harmful, other');
+<script is:inline define:vars={{ postId, i18n: { report_prompt: i.moderation.report_prompt, report_invalid: i.moderation.report_invalid, report_success: i.moderation.report_success, report_duplicate: i.moderation.report_duplicate, just_now: i.time.just_now, anonymous: i.common.anonymous } }}>
+  async function reportPost(id) {
+    const reason = prompt(i18n.report_prompt);
     if (!reason) return;
     const validReasons = ['spam', 'offensive', 'harmful', 'other'];
     const cleanReason = reason.toLowerCase().trim();
     if (!validReasons.includes(cleanReason)) {
-      alert('Invalid reason. Use: spam, offensive, harmful, or other');
+      alert(i18n.report_invalid);
       return;
     }
     try {
-      const res = await fetch('/api/posts/' + postId + '/flag', {
+      const res = await fetch('/api/posts/' + id + '/flag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: cleanReason }),
       });
       if (res.ok) {
-        alert('Reported. Thank you.');
+        alert(i18n.report_success);
       } else if (res.status === 409) {
-        alert('Already reported.');
+        alert(i18n.report_duplicate);
       }
     } catch {}
   }
-</script>
 
-<script is:inline define:vars={{ postId }}>
   document.getElementById('submit-comment')?.addEventListener('click', async function() {
     const bodyEl = document.getElementById('comment-body');
     const anonEl = document.getElementById('comment-anon');
@@ -163,13 +161,38 @@ const isFlagged = post.status === 'flagged';
       });
       if (res.ok) {
         bodyEl.value = '';
-        // Add comment to the list
         const list = document.getElementById('comments-list');
         const div = document.createElement('div');
         div.className = 'comment-card';
-        div.innerHTML = '<div class="comment-meta"><span>Anonymous</span><span class="post-meta-sep">&bull;</span><span>< 1 min</span></div><p class="comment-body">' + body.replace(/</g, '&lt;') + '</p>';
+
+        const meta = document.createElement('div');
+        meta.className = 'comment-meta';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = i18n.anonymous;
+
+        const sep = document.createElement('span');
+        sep.className = 'post-meta-sep';
+        sep.setAttribute('aria-hidden', 'true');
+        sep.textContent = '•';
+
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = i18n.just_now;
+
+        meta.append(nameSpan, sep, timeSpan);
+
+        const bodyP = document.createElement('p');
+        bodyP.className = 'comment-body';
+        bodyP.textContent = body; // textContent prevents XSS
+
+        div.append(meta, bodyP);
         list.prepend(div);
       }
     } catch {}
+  });
+
+  // Attach reportPost to report button
+  document.querySelector('.report-btn')?.addEventListener('click', function() {
+    reportPost(postId);
   });
 </script>

@@ -67,12 +67,23 @@
   "moderation": {
     "report": "Report",
     "report_reason": "Why are you reporting this?",
+    "report_prompt": "Reason: spam, offensive, harmful, other",
+    "report_invalid": "Invalid reason. Use: spam, offensive, harmful, or other",
+    "report_success": "Reported. Thank you.",
+    "report_duplicate": "Already reported.",
     "spam": "Spam",
     "offensive": "Offensive",
     "harmful": "Harmful",
     "other": "Other",
     "reported": "Reported",
     "flagged": "This content was hidden due to community reports."
+  },
+  "time": {
+    "just_now": "< 1 min",
+    "min": "min",
+    "hour": "h",
+    "day": "d",
+    "month": "mo"
   },
   "common": {
     "loading": "Loading...",
@@ -94,7 +105,9 @@
     "comment": "Comment",
     "comments": "Comments",
     "write_comment": "Write a comment...",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
   },
   "errors": {
     "title_too_short": "Title is too short",

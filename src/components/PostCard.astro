@@ -70,7 +70,7 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
       </span>
     </div>
     <a href={localePath(locale, `/post/${post.id}`)} class="read-more-link">
-      Read &rarr;
+      {i.post.read_more} &rarr;
     </a>
   </div>
 </article>

@@ -67,12 +67,23 @@
   "moderation": {
     "report": "Signaler",
     "report_reason": "Pourquoi signalez-vous ceci ?",
+    "report_prompt": "Raison: spam, offensive, harmful, other",
+    "report_invalid": "Raison invalide. Utilisez: spam, offensive, harmful ou other",
+    "report_success": "Signalé. Merci.",
+    "report_duplicate": "Déjà signalé.",
     "spam": "Spam",
     "offensive": "Offensant",
     "harmful": "Nuisible",
     "other": "Autre",
     "reported": "Signalé",
     "flagged": "Ce contenu a été masqué suite aux signalements de la communauté."
+  },
+  "time": {
+    "just_now": "< 1 min",
+    "min": "min",
+    "hour": "h",
+    "day": "j",
+    "month": "mois"
   },
   "common": {
     "loading": "Chargement...",
@@ -94,7 +105,9 @@
     "comment": "Commenter",
     "comments": "Commentaires",
     "write_comment": "Écrivez un commentaire...",
-    "anonymous": "Anonyme"
+    "anonymous": "Anonyme",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité"
   },
   "errors": {
     "title_too_short": "Le titre est trop court",

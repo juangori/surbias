@@ -35,12 +35,13 @@ export function localePath(locale: Locale, path: string): string {
   return `/${locale}${path}`;
 }
 
-export function timeAgo(date: Date, _locale: Locale): string {
+export function timeAgo(date: Date, locale: Locale): string {
+  const i = t(locale);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
-  if (seconds < 60) return `< 1 min`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d`;
-  return `${Math.floor(seconds / 2592000)}mo`;
+  if (seconds < 60) return i.time.just_now;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${i.time.min}`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}${i.time.hour}`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}${i.time.day}`;
+  return `${Math.floor(seconds / 2592000)}${i.time.month}`;
 }

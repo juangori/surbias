@@ -41,8 +41,8 @@ const i = t(locale);
       >
         ☕ {i.common.footer_coffee}
       </a>
-      <a href="/terms" class="footer-legal-link">Terms of Service</a>
-      <a href="/privacy" class="footer-legal-link">Privacy Policy</a>
+      <a href={localePath(locale, '/terms')} class="footer-legal-link">{i.common.terms}</a>
+      <a href={localePath(locale, '/privacy')} class="footer-legal-link">{i.common.privacy}</a>
     </div>
 
   </div>
