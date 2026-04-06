@@ -1,0 +1,396 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getDb } from '../../db';
+import { posts, users } from '../../db/schema';
+import { desc, eq, count, sql } from 'drizzle-orm';
+import { createAuth } from '../../lib/auth';
+import { env } from 'cloudflare:workers';
+import Users from '@lucide/astro/icons/users';
+import ChartBar from '@lucide/astro/icons/chart-bar';
+import FileText from '@lucide/astro/icons/file-text';
+import Flag from '@lucide/astro/icons/flag';
+import Shield from '@lucide/astro/icons/shield';
+import Search from '@lucide/astro/icons/search';
+import CircleX from '@lucide/astro/icons/circle-x';
+import CircleCheck from '@lucide/astro/icons/circle-check';
+
+// Admin auth check
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+const isAdmin = session?.user?.email === env.ADMIN_EMAIL;
+if (!isAdmin) return Astro.redirect('/login');
+
+const db = getDb(env.DB);
+
+// Search query from URL
+const searchQuery = Astro.url.searchParams.get('q')?.trim() ?? '';
+
+// Fetch all users with post counts using a subquery
+const allUsers = await db
+  .select({
+    id: users.id,
+    email: users.email,
+    name: users.name,
+    createdAt: users.createdAt,
+    banned: users.banned,
+    postCount: sql<number>`(SELECT COUNT(*) FROM posts WHERE posts.user_id = ${users.id})`,
+  })
+  .from(users)
+  .orderBy(desc(users.createdAt));
+
+// Filter by search query client-side after fetch (keeps it simple for small datasets)
+const filteredUsers = searchQuery
+  ? allUsers.filter(u => u.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  : allUsers;
+
+function normalizeDate(val: unknown): Date {
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') return new Date(val * 1000);
+  return new Date(String(val));
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<Base title="Admin — Users">
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <nav class="admin-sidebar">
+      <div class="admin-sidebar-logo">
+        <Shield size={20} />
+        <span>Admin</span>
+      </div>
+      <ul class="admin-nav-links">
+        <li><a href="/admin"><ChartBar size={16} /> Dashboard</a></li>
+        <li><a href="/admin/users" class="active"><Users size={16} /> Users</a></li>
+        <li><a href="/admin/posts"><FileText size={16} /> Posts</a></li>
+        <li><a href="/admin/flags"><Flag size={16} /> Flags</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main content -->
+    <div class="admin-main">
+      <header class="admin-page-header">
+        <h1>Users</h1>
+        <p class="admin-subtitle">{filteredUsers.length} {searchQuery ? 'matching' : 'total'} user{filteredUsers.length !== 1 ? 's' : ''}</p>
+      </header>
+
+      <!-- Search -->
+      <form method="get" class="admin-search-form">
+        <div class="admin-search-wrap">
+          <Search size={16} class="admin-search-icon" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Search by email..."
+            value={searchQuery}
+            class="admin-search-input"
+          />
+          <button type="submit" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Search</button>
+          {searchQuery && <a href="/admin/users" class="admin-clear-search">Clear</a>}
+        </div>
+      </form>
+
+      {filteredUsers.length === 0 ? (
+        <div class="notice notice-info">No users found{searchQuery ? ` matching "${searchQuery}"` : ''}.</div>
+      ) : (
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Posts</th>
+                <th>Joined</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => {
+                const date = normalizeDate(user.createdAt);
+                return (
+                  <tr data-user-id={user.id}>
+                    <td>
+                      <span class="admin-user-email">{user.email}</span>
+                    </td>
+                    <td class="admin-muted">{user.name ?? '—'}</td>
+                    <td>
+                      {user.postCount > 0
+                        ? <a href={`/admin/posts?userId=${user.id}`} class="admin-link">{user.postCount}</a>
+                        : <span class="admin-muted">0</span>
+                      }
+                    </td>
+                    <td class="admin-muted">{formatDate(date)}</td>
+                    <td>
+                      <span class={`admin-status ${user.banned ? 'admin-status--deleted' : 'admin-status--published'}`}>
+                        {user.banned ? 'Banned' : 'Active'}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="admin-actions" style="margin-top: 0;">
+                        {user.banned ? (
+                          <button
+                            class="admin-btn admin-btn--success"
+                            data-action="unban_user"
+                            data-user-id={user.id}
+                            title="Unban user"
+                          >
+                            <CircleCheck size={14} /> Unban
+                          </button>
+                        ) : (
+                          <button
+                            class="admin-btn admin-btn--danger"
+                            data-action="ban_user"
+                            data-user-id={user.id}
+                            title="Ban user"
+                          >
+                            <CircleX size={14} /> Ban
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll('[data-action="ban_user"], [data-action="unban_user"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLElement;
+      const action = el.dataset.action!;
+      const userId = el.dataset.userId!;
+      const isBanning = action === 'ban_user';
+
+      if (!confirm(isBanning ? 'Ban this user?' : 'Unban this user?')) return;
+
+      el.setAttribute('disabled', 'true');
+
+      const res = await fetch('/api/admin/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, userId }),
+      });
+
+      if (res.ok) {
+        const row = el.closest('tr');
+        if (row) {
+          const statusEl = row.querySelector('.admin-status');
+          if (statusEl) {
+            statusEl.textContent = isBanning ? 'Banned' : 'Active';
+            statusEl.className = `admin-status ${isBanning ? 'admin-status--deleted' : 'admin-status--published'}`;
+          }
+          // Swap button
+          const newAction = isBanning ? 'unban_user' : 'ban_user';
+          el.dataset.action = newAction;
+          el.className = `admin-btn ${isBanning ? 'admin-btn--success' : 'admin-btn--danger'}`;
+          el.innerHTML = isBanning
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Unban'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Ban';
+        }
+      } else {
+        alert('Action failed. Please try again.');
+      }
+
+      el.removeAttribute('disabled');
+    });
+  });
+</script>
+
+<style>
+  /* Shared admin layout styles (duplicated here so each page is self-contained) */
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 120px);
+    align-items: start;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 1.5rem;
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--surbias-primary);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    margin-bottom: 1rem;
+  }
+
+  .admin-nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+
+  .admin-nav-links a:hover,
+  .admin-nav-links a.active {
+    background: var(--surbias-warm-light);
+    color: var(--surbias-primary);
+  }
+
+  .admin-page-header { margin-bottom: 1.5rem; }
+  .admin-page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem;
+  }
+  .admin-subtitle { color: var(--surbias-text-muted); font-size: 0.9rem; margin: 0; }
+
+  /* Search */
+  .admin-search-form { margin-bottom: 1.25rem; }
+  .admin-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-pill);
+    padding: 0.35rem 0.75rem;
+    max-width: 480px;
+    box-shadow: var(--shadow-sm);
+  }
+  .admin-search-icon { color: var(--surbias-text-light); flex-shrink: 0; }
+  .admin-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: var(--surbias-text);
+    font-family: inherit;
+  }
+  .admin-clear-search {
+    font-size: 0.8rem;
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .admin-clear-search:hover { color: var(--surbias-danger); }
+
+  /* Table */
+  .admin-table-wrap {
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .admin-table thead th {
+    background: var(--surbias-warm-light);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--surbias-text-muted);
+    border-bottom: 1px solid var(--surbias-border);
+  }
+
+  .admin-table tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    vertical-align: middle;
+  }
+
+  .admin-table tbody tr:last-child td { border-bottom: none; }
+  .admin-table tbody tr:hover td { background: var(--surbias-warm-light); }
+
+  .admin-user-email {
+    font-weight: 500;
+    color: var(--surbias-text);
+  }
+
+  .admin-link {
+    color: var(--surbias-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .admin-link:hover { text-decoration: underline; }
+  .admin-muted { color: var(--surbias-text-muted); font-size: 0.85rem; }
+
+  .admin-status {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .admin-status--published { background: var(--surbias-success-light); color: var(--surbias-success); }
+  .admin-status--deleted   { background: var(--surbias-danger-light); color: var(--surbias-danger); }
+
+  /* Buttons */
+  .admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.75rem;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--dur-fast);
+  }
+  .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .admin-btn--danger  { background: var(--surbias-danger-light); color: var(--surbias-danger); }
+  .admin-btn--success { background: var(--surbias-success-light); color: var(--surbias-success); }
+  .admin-btn--primary { background: var(--surbias-primary); color: white; }
+  .admin-btn:hover:not(:disabled) { opacity: 0.8; }
+
+  @media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; }
+    .admin-sidebar { position: static; }
+    .admin-nav-links { flex-direction: row; flex-wrap: wrap; }
+    .admin-table { font-size: 0.8rem; }
+    .admin-table thead th,
+    .admin-table tbody td { padding: 0.5rem 0.6rem; }
+  }
+</style>

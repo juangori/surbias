@@ -1,0 +1,392 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getDb } from '../../db';
+import { posts, flags } from '../../db/schema';
+import { desc, eq } from 'drizzle-orm';
+import { createAuth } from '../../lib/auth';
+import { env } from 'cloudflare:workers';
+import ChartBar from '@lucide/astro/icons/chart-bar';
+import Users from '@lucide/astro/icons/users';
+import FileText from '@lucide/astro/icons/file-text';
+import Flag from '@lucide/astro/icons/flag';
+import Shield from '@lucide/astro/icons/shield';
+import Trash2 from '@lucide/astro/icons/trash-2';
+import CircleCheck from '@lucide/astro/icons/circle-check';
+
+// Admin auth check
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+const isAdmin = session?.user?.email === env.ADMIN_EMAIL;
+if (!isAdmin) return Astro.redirect('/login');
+
+const db = getDb(env.DB);
+
+// Get all flags with associated post data
+const allFlags = await db
+  .select({
+    flagId: flags.id,
+    targetId: flags.targetId,
+    reason: flags.reason,
+    reporterHash: flags.reporterHash,
+    flagCreatedAt: flags.createdAt,
+    postTitle: posts.title,
+    postStatus: posts.status,
+    postCategory: posts.category,
+  })
+  .from(flags)
+  .leftJoin(posts, eq(flags.targetId, posts.id))
+  .where(eq(flags.targetType, 'post'))
+  .orderBy(desc(flags.createdAt))
+  .limit(200);
+
+function normalizeDate(val: unknown): Date {
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') return new Date(val * 1000);
+  return new Date(String(val));
+}
+
+function timeAgo(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const reasonLabels: Record<string, string> = {
+  spam: 'Spam',
+  offensive: 'Offensive',
+  harmful: 'Harmful',
+  other: 'Other',
+};
+---
+
+<Base title="Admin — Flags">
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <nav class="admin-sidebar">
+      <div class="admin-sidebar-logo">
+        <Shield size={20} />
+        <span>Admin</span>
+      </div>
+      <ul class="admin-nav-links">
+        <li><a href="/admin"><ChartBar size={16} /> Dashboard</a></li>
+        <li><a href="/admin/users"><Users size={16} /> Users</a></li>
+        <li><a href="/admin/posts"><FileText size={16} /> Posts</a></li>
+        <li><a href="/admin/flags" class="active"><Flag size={16} /> Flags <span class="admin-badge">{allFlags.length}</span></a></li>
+      </ul>
+    </nav>
+
+    <!-- Main content -->
+    <div class="admin-main">
+      <header class="admin-page-header">
+        <h1>Flags</h1>
+        <p class="admin-subtitle">{allFlags.length} flag{allFlags.length !== 1 ? 's' : ''} pending review</p>
+      </header>
+
+      {allFlags.length === 0 ? (
+        <div class="notice notice-info">No flags to review. Everything looks clean!</div>
+      ) : (
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Post</th>
+                <th>Category</th>
+                <th>Reason</th>
+                <th>Reporter</th>
+                <th>Post Status</th>
+                <th>Flagged</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allFlags.map((flag) => {
+                const date = normalizeDate(flag.flagCreatedAt);
+                const shortHash = flag.reporterHash.slice(0, 8);
+                return (
+                  <tr data-flag-id={flag.flagId} data-post-id={flag.targetId}>
+                    <td>
+                      {flag.postTitle ? (
+                        <a href={`/post/${flag.targetId}`} class="admin-link" target="_blank" rel="noopener">
+                          {flag.postTitle.slice(0, 50)}{(flag.postTitle?.length ?? 0) > 50 ? '…' : ''}
+                        </a>
+                      ) : (
+                        <span class="admin-muted">[Post deleted]</span>
+                      )}
+                    </td>
+                    <td>
+                      {flag.postCategory
+                        ? <span class="category-badge">{flag.postCategory}</span>
+                        : <span class="admin-muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      <span class="admin-reason-badge">{reasonLabels[flag.reason] ?? flag.reason}</span>
+                    </td>
+                    <td class="admin-muted admin-mono">{shortHash}…</td>
+                    <td>
+                      <span class={`admin-status admin-status--${flag.postStatus ?? 'deleted'}`}>
+                        {flag.postStatus ?? 'deleted'}
+                      </span>
+                    </td>
+                    <td class="admin-muted">{timeAgo(date)}</td>
+                    <td>
+                      <div class="admin-actions" style="margin-top: 0; gap: 0.35rem;">
+                        {flag.postStatus && flag.postStatus !== 'deleted' && (
+                          <>
+                            <button
+                              class="admin-btn admin-btn--success"
+                              data-action="dismiss_flags"
+                              data-post-id={flag.targetId}
+                              title="Dismiss all flags for this post"
+                            >
+                              <CircleCheck size={13} /> Dismiss
+                            </button>
+                            <button
+                              class="admin-btn admin-btn--danger"
+                              data-action="delete_post"
+                              data-post-id={flag.targetId}
+                              title="Delete this post"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </>
+                        )}
+                        {(!flag.postStatus || flag.postStatus === 'deleted') && (
+                          <span class="admin-muted" style="font-size: 0.75rem;">Post removed</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Group rows by postId so dismissing/deleting removes all rows for that post
+  document.querySelectorAll('[data-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLElement;
+      const action = el.dataset.action!;
+      const postId = el.dataset.postId!;
+
+      if (action === 'delete_post' && !confirm('Delete this post and remove all its flags?')) return;
+
+      el.setAttribute('disabled', 'true');
+
+      const res = await fetch('/api/admin/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, postId }),
+      });
+
+      if (res.ok) {
+        if (action === 'dismiss_flags') {
+          // Remove all rows with this postId
+          document.querySelectorAll(`tr[data-post-id="${postId}"]`).forEach(row => row.remove());
+        } else if (action === 'delete_post') {
+          // Update all rows for this post to show "Post removed"
+          document.querySelectorAll(`tr[data-post-id="${postId}"]`).forEach(row => {
+            const statusEl = row.querySelector('.admin-status');
+            if (statusEl) {
+              statusEl.textContent = 'deleted';
+              statusEl.className = 'admin-status admin-status--deleted';
+            }
+            const actionsEl = row.querySelector('.admin-actions');
+            if (actionsEl) {
+              actionsEl.innerHTML = '<span class="admin-muted" style="font-size: 0.75rem;">Post removed</span>';
+            }
+          });
+        }
+      } else {
+        alert('Action failed. Please try again.');
+        el.removeAttribute('disabled');
+      }
+    });
+  });
+</script>
+
+<style>
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 120px);
+    align-items: start;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 1.5rem;
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--surbias-primary);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    margin-bottom: 1rem;
+  }
+
+  .admin-nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+
+  .admin-nav-links a:hover,
+  .admin-nav-links a.active {
+    background: var(--surbias-warm-light);
+    color: var(--surbias-primary);
+  }
+
+  .admin-page-header { margin-bottom: 1.5rem; }
+  .admin-page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem;
+  }
+  .admin-subtitle { color: var(--surbias-text-muted); font-size: 0.9rem; margin: 0; }
+
+  /* Table */
+  .admin-table-wrap {
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .admin-table thead th {
+    background: var(--surbias-warm-light);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--surbias-text-muted);
+    border-bottom: 1px solid var(--surbias-border);
+  }
+
+  .admin-table tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    vertical-align: middle;
+  }
+
+  .admin-table tbody tr:last-child td { border-bottom: none; }
+  .admin-table tbody tr:hover td { background: var(--surbias-warm-light); }
+
+  .admin-link {
+    color: var(--surbias-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .admin-link:hover { text-decoration: underline; }
+
+  .admin-muted { color: var(--surbias-text-muted); font-size: 0.8rem; }
+
+  .admin-mono { font-family: monospace; font-size: 0.78rem; }
+
+  .admin-status {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .admin-status--published { background: var(--surbias-success-light); color: var(--surbias-success); }
+  .admin-status--flagged   { background: #fef3c7; color: #92400e; }
+  .admin-status--deleted   { background: var(--surbias-danger-light); color: var(--surbias-danger); }
+
+  .admin-reason-badge {
+    display: inline-block;
+    background: var(--surbias-warm-tint);
+    color: var(--surbias-text-muted);
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .admin-badge {
+    display: inline-block;
+    background: var(--surbias-danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-pill);
+    margin-left: 0.25rem;
+  }
+
+  .admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--dur-fast);
+    white-space: nowrap;
+  }
+  .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .admin-btn--danger  { background: var(--surbias-danger-light); color: var(--surbias-danger); }
+  .admin-btn--success { background: var(--surbias-success-light); color: var(--surbias-success); }
+  .admin-btn:hover:not(:disabled) { opacity: 0.75; }
+
+  @media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; }
+    .admin-sidebar { position: static; }
+    .admin-nav-links { flex-direction: row; flex-wrap: wrap; }
+    .admin-table { font-size: 0.8rem; }
+    .admin-table thead th,
+    .admin-table tbody td { padding: 0.5rem 0.6rem; }
+  }
+</style>

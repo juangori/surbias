@@ -6,12 +6,12 @@ import pt from './pt.json';
 
 const translations: Record<string, typeof es> = { es, en, de, fr, pt };
 
-export const LOCALES = ['es', 'en', 'de', 'fr', 'pt'] as const;
+export const LOCALES = ['en', 'es', 'de', 'fr', 'pt'] as const;
 export type Locale = typeof LOCALES[number];
 
 export const LOCALE_NAMES: Record<Locale, string> = {
-  es: 'Español',
   en: 'English',
+  es: 'Español',
   de: 'Deutsch',
   fr: 'Français',
   pt: 'Português',
@@ -23,15 +23,15 @@ export function getLocaleFromUrl(url: URL): Locale {
   if (first && LOCALES.includes(first as Locale)) {
     return first as Locale;
   }
-  return 'es'; // default
+  return 'en'; // default
 }
 
 export function t(locale: Locale): typeof es {
-  return translations[locale] || translations.es;
+  return translations[locale] || translations.en;
 }
 
 export function localePath(locale: Locale, path: string): string {
-  if (locale === 'es') return path;
+  if (locale === 'en') return path;
   return `/${locale}${path}`;
 }
 

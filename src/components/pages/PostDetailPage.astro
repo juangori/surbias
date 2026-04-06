@@ -30,38 +30,49 @@ const isFlagged = post.status === 'flagged';
 ---
 
 <Base title={post.title}>
+  <!-- Back navigation -->
+  <div style="margin-bottom: 1.5rem;">
+    <a href={localePath(locale, '/')} class="back-nav">
+      &larr; {i.nav.home}
+    </a>
+  </div>
+
   <article style="max-width: 700px; margin: 0 auto;">
     {isFlagged && (
       <div class="flagged-notice">{i.moderation.flagged}</div>
     )}
 
     {!isFlagged && (
-      <>
-        <div class="post-meta" style="margin-bottom: 1rem;">
+      <div class="post-detail-card">
+        <!-- Metadata row -->
+        <div class="post-meta" style="margin-bottom: 1.25rem;">
           <span class="category-badge">{categoryLabel}</span>
+          <span class="post-meta-sep">&bull;</span>
           <span>{post.isAnonymous ? '---' : 'User'}</span>
+          <span class="post-meta-sep">&bull;</span>
           <span>{timeAgo(createdAt, locale)}</span>
         </div>
 
-        <h1 style="margin-bottom: 1rem;">{post.title}</h1>
+        <!-- Title -->
+        <h1 class="post-detail-title">{post.title}</h1>
 
-        <div style="line-height: 1.8; margin-bottom: 2rem; white-space: pre-wrap;">{post.body}</div>
+        <!-- Body -->
+        <div class="post-detail-body">{post.body}</div>
 
+        <!-- Reactions -->
         <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
 
-        <div style="margin-top: 1.5rem; text-align: right;">
+        <!-- Report -->
+        <div class="post-detail-actions">
+          <span style="font-size: 0.8rem; color: var(--surbias-text-muted);">
+            &#128276; {i.moderation.report ? i.moderation.report.split(' ')[0] : ''}
+          </span>
           <button class="report-btn" onclick={`reportPost('${post.id}')`}>
-            {i.moderation.report}
+            &#9872; {i.moderation.report}
           </button>
         </div>
-      </>
+      </div>
     )}
-
-    <div style="margin-top: 2rem;">
-      <a href={localePath(locale, '/')} style="color: var(--surbias-primary);">
-        &larr; {i.nav.home}
-      </a>
-    </div>
   </article>
 </Base>
 

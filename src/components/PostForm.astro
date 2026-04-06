@@ -1,20 +1,27 @@
 ---
 import { CATEGORIES } from '../db/schema';
 import { t, type Locale } from '../i18n';
+import { PenLine } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
   turnstileSiteKey: string;
   error?: string;
+  inline?: boolean;
 }
 
-const { locale, turnstileSiteKey, error } = Astro.props;
+const { locale, turnstileSiteKey, error, inline = false } = Astro.props;
 const i = t(locale);
 ---
 
-<div class="post-form">
-  <h1>{i.post.share_title}</h1>
-  <p style="color: var(--surbias-text-muted); margin-bottom: 2rem;">{i.post.share_subtitle}</p>
+<div class:list={['post-form', { 'post-form-inline': inline }]}>
+  {!inline && (
+    <div class="post-form-header">
+      <PenLine size={36} class="post-form-icon" aria-hidden="true" />
+      <h1>{i.post.share_title}</h1>
+      <p>{i.post.share_subtitle}</p>
+    </div>
+  )}
 
   {error && (
     <div class="notice notice-error">
@@ -27,54 +34,101 @@ const i = t(locale);
 
     <!-- Honeypot -->
     <div class="ohnohoney">
-      <label for="website">Website</label>
-      <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+      <label for={inline ? 'website-inline' : 'website'}>Website</label>
+      <input type="text" id={inline ? 'website-inline' : 'website'} name="website" tabindex="-1" autocomplete="off" />
     </div>
 
-    <label for="title">
-      {i.post.title_label}
-      <input
-        type="text"
-        id="title"
-        name="title"
-        placeholder={i.post.title_placeholder}
-        maxlength="150"
-        required
-      />
-    </label>
-
-    <label for="category">
-      {i.post.category_label}
-      <select id="category" name="category" required>
-        {CATEGORIES.map((cat) => (
-          <option value={cat}>
-            {i.categories[cat as keyof typeof i.categories]}
-          </option>
-        ))}
-      </select>
-    </label>
-
-    <label for="body">
-      {i.post.body_label}
+    {inline ? (
+      <!-- Inline compact layout -->
+      <div class="inline-form-row">
+        <input
+          type="text"
+          id="title-inline"
+          name="title"
+          placeholder={i.post.title_placeholder}
+          maxlength="150"
+          required
+          class="inline-title"
+        />
+        <select id="category-inline" name="category" required class="inline-category">
+          {CATEGORIES.map((cat) => (
+            <option value={cat}>
+              {i.categories[cat as keyof typeof i.categories]}
+            </option>
+          ))}
+        </select>
+      </div>
       <textarea
-        id="body"
+        id="body-inline"
         name="body"
         placeholder={i.post.body_placeholder}
         maxlength="5000"
         required
+        class="inline-body"
+        rows="3"
       ></textarea>
-    </label>
-
-    <div class="form-footer">
-      <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0; cursor: pointer;">
-        <input type="checkbox" name="is_anonymous" checked />
-        {i.post.anonymous_label}
+      <div class="form-footer">
+        <label class="anonymous-toggle">
+          <input type="checkbox" name="is_anonymous" checked />
+          {i.post.anonymous_label}
+        </label>
+        <button type="submit" class="btn-cta">{i.post.submit}</button>
+      </div>
+    ) : (
+      <!-- Full page layout -->
+      <label for="title">
+        {i.post.title_label}
+        <input
+          type="text"
+          id="title"
+          name="title"
+          placeholder={i.post.title_placeholder}
+          maxlength="150"
+          required
+        />
       </label>
-      <button type="submit" class="btn-cta">{i.post.submit}</button>
-    </div>
+
+      <label for="category">
+        {i.post.category_label}
+        <select id="category" name="category" required>
+          {CATEGORIES.map((cat) => (
+            <option value={cat}>
+              {i.categories[cat as keyof typeof i.categories]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label for="body">
+        {i.post.body_label}
+        <textarea
+          id="body"
+          name="body"
+          placeholder={i.post.body_placeholder}
+          maxlength="5000"
+          required
+        ></textarea>
+      </label>
+
+      <div class="form-footer">
+        <label class="anonymous-toggle">
+          <input type="checkbox" name="is_anonymous" checked />
+          {i.post.anonymous_label}
+        </label>
+        <button type="submit" class="btn-cta">{i.post.submit}</button>
+      </div>
+    )}
 
     <!-- Cloudflare Turnstile -->
-    <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" style="margin-top: 1rem;"></div>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" style="margin-top: 0.75rem;"></div>
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   </form>
 </div>
+
+<style>
+  .post-form-icon {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--surbias-primary);
+  }
+</style>

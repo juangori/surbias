@@ -6,7 +6,8 @@ export const users = sqliteTable('users', {
   emailVerified: integer('email_verified', { mode: 'boolean' }).default(false),
   name: text('name'),
   image: text('image'),
-  locale: text('locale').default('es'),
+  locale: text('locale').default('en'),
+  banned: integer('banned', { mode: 'boolean' }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -52,7 +53,7 @@ export const verifications = sqliteTable('verifications', {
 export const CATEGORIES = ['career', 'business', 'education', 'relationships', 'health', 'financial', 'other'] as const;
 export type Category = typeof CATEGORIES[number];
 
-export const LOCALES = ['es', 'en', 'de', 'fr', 'pt'] as const;
+export const LOCALES = ['en', 'es', 'de', 'fr', 'pt'] as const;
 export type Locale = typeof LOCALES[number];
 
 export const REACTION_TYPES = ['metoo', 'hug', 'strength', 'respect', 'solidarity'] as const;
@@ -64,12 +65,13 @@ export const posts = sqliteTable('posts', {
   category: text('category').notNull(),
   title: text('title').notNull(),
   body: text('body').notNull(),
-  locale: text('locale').notNull().default('es'),
+  locale: text('locale').notNull().default('en'),
   isAnonymous: integer('is_anonymous', { mode: 'boolean' }).notNull().default(true),
   status: text('status').notNull().default('published'),
   flagCount: integer('flag_count').notNull().default(0),
   reactionCounts: text('reaction_counts').notNull().default('{}'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 });
 
 export const reactions = sqliteTable('reactions', {

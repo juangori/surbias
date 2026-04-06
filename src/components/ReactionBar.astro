@@ -13,11 +13,11 @@ const { locale, postId, reactionCounts, userReaction } = Astro.props;
 const i = t(locale);
 
 const reactionEmojis: Record<string, string> = {
-  metoo: '\u{1F64B}',
-  hug: '\u{1FAC2}',
-  strength: '\u{1F4AA}',
-  respect: '\u{1F3A9}',
-  solidarity: '\u{1F91D}',
+  metoo:      '🙋',
+  hug:        '🫂',
+  strength:   '💪',
+  respect:    '🎩',
+  solidarity: '🤝',
 };
 ---
 
@@ -29,7 +29,7 @@ const reactionEmojis: Record<string, string> = {
       data-post-id={postId}
       title={i.reactions[type as keyof typeof i.reactions]}
     >
-      <span>{reactionEmojis[type]}</span>
+      <span class="reaction-emoji">{reactionEmojis[type]}</span>
       <span>{i.reactions[type as keyof typeof i.reactions]}</span>
       <span class="reaction-count">{reactionCounts[type] || 0}</span>
     </button>

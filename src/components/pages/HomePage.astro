@@ -2,9 +2,10 @@
 import Base from '../../layouts/Base.astro';
 import PostCard from '../../components/PostCard.astro';
 import CategoryFilter from '../../components/CategoryFilter.astro';
+import PostForm from '../../components/PostForm.astro';
 import { getLocaleFromUrl, t, localePath } from '../../i18n';
 import { getDb } from '../../db';
-import { posts } from '../../db/schema';
+import { posts, CATEGORIES } from '../../db/schema';
 import { desc, eq, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 
@@ -14,36 +15,329 @@ const db = getDb(env.DB);
 
 const url = Astro.url;
 const category = url.searchParams.get('category');
+const sort = url.searchParams.get('sort') || 'recent';
 const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
 const perPage = 20;
 
+// Build base conditions
 const conditions = [eq(posts.status, 'published')];
 if (category) conditions.push(eq(posts.category, category));
+
+// For 'hot', last 7 days only
+if (sort === 'hot') {
+  const sevenDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
+  conditions.push(sql`${posts.createdAt} >= ${sevenDaysAgo}`);
+}
+
 const where = conditions.length === 1 ? conditions[0] : and(...conditions);
 
-const results = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage).offset((page - 1) * perPage);
+function totalReactions(reactionCounts: string): number {
+  try {
+    const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
+    return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+let results;
+if (sort === 'hot' || sort === 'popular') {
+  const allRows = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage * 5);
+  allRows.sort((a, b) => totalReactions(b.reactionCounts) - totalReactions(a.reactionCounts));
+  results = allRows.slice((page - 1) * perPage, page * perPage);
+} else {
+  results = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage).offset((page - 1) * perPage);
+}
+
 const countResult = await db.select({ count: sql<number>`count(*)` }).from(posts).where(where);
 const total = countResult[0]?.count || 0;
 const totalPages = Math.ceil(total / perPage);
+
+// Fetch counts per category for sidebar
+const catCountRows = await db
+  .select({ category: posts.category, count: sql<number>`count(*)` })
+  .from(posts)
+  .where(eq(posts.status, 'published'))
+  .groupBy(posts.category);
+
+const categoryCounts: Record<string, number> = {};
+for (const row of catCountRows) {
+  categoryCounts[row.category] = row.count;
+}
+
+const turnstileSiteKey = env.TURNSTILE_SITE_KEY || '';
+const postError = url.searchParams.get('error') || undefined;
 ---
 
 <Base>
-  <div class="hero">
-    <h1>{i.site.tagline}</h1>
-    <p class="tagline">{i.site.description}</p>
-    <a href={localePath(locale, '/post/new')} class="btn-cta">{i.nav.share}</a>
-  </div>
-  <CategoryFilter locale={locale} activeCategory={category || undefined} />
-  {results.length === 0 ? (
-    <div class="notice notice-info">{i.common.empty}</div>
-  ) : (
-    results.map((post) => <PostCard locale={locale} post={post} />)
-  )}
-  {totalPages > 1 && (
-    <div class="pagination">
-      {page > 1 && <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}`}>{i.common.previous}</a>}
-      <span>{i.common.page} {page} / {totalPages}</span>
-      {page < totalPages && <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}`}>{i.common.next}</a>}
+  <!-- Hero: compact, full width -->
+  <div class="hero hero-compact">
+    <div class="hero-inner">
+      <p class="hero-text">{i.site.description}</p>
     </div>
-  )}
+  </div>
+
+  <!-- Inline post form -->
+  <div class="inline-form-section">
+    <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
+  </div>
+
+  <!-- Sort tabs -->
+  <div class="sort-tabs" role="tablist" aria-label="Sort posts by">
+    <button
+      class:list={['sort-tab', { active: sort === 'recent' }]}
+      data-sort="recent"
+      role="tab"
+      aria-selected={sort === 'recent' ? 'true' : 'false'}
+    >
+      Recent
+    </button>
+    <button
+      class:list={['sort-tab', { active: sort === 'hot' }]}
+      data-sort="hot"
+      role="tab"
+      aria-selected={sort === 'hot' ? 'true' : 'false'}
+    >
+      Hot
+    </button>
+    <button
+      class:list={['sort-tab', { active: sort === 'popular' }]}
+      data-sort="popular"
+      role="tab"
+      aria-selected={sort === 'popular' ? 'true' : 'false'}
+    >
+      Popular
+    </button>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="home-content">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <p class="sidebar-title">Categories</p>
+        <CategoryFilter
+          locale={locale}
+          activeCategory={category || undefined}
+          sidebar={true}
+          counts={categoryCounts}
+        />
+      </div>
+    </aside>
+
+    <!-- Feed -->
+    <div class="feed">
+      <div id="posts-container">
+        <div class="posts-grid">
+          {results.length === 0 ? (
+            <div class="notice notice-info">{i.common.empty}</div>
+          ) : (
+            results.map((post) => <PostCard locale={locale} post={post} />)
+          )}
+        </div>
+
+        <!-- Pagination -->
+        {totalPages > 1 && (
+          <div class="pagination">
+            {page > 1 && (
+              <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}>
+                &larr; {i.common.previous}
+              </a>
+            )}
+            <span>{i.common.page} {page} / {totalPages}</span>
+            {page < totalPages && (
+              <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}>
+                {i.common.next} &rarr;
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
 </Base>
+
+<script>
+  (() => {
+    function timeAgo(createdAt: number): string {
+      const seconds = Math.floor((Date.now() - createdAt) / 1000);
+      if (seconds < 60) return '< 1 min';
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+      if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d`;
+      return `${Math.floor(seconds / 2592000)}mo`;
+    }
+
+    function getLocale(): string {
+      return document.documentElement.lang || 'en';
+    }
+
+    function getLocalePath(path: string): string {
+      const locale = getLocale();
+      return locale === 'en' ? path : `/${locale}${path}`;
+    }
+
+    interface Post {
+      id: string;
+      title: string;
+      body: string;
+      category: string;
+      isAnonymous: boolean | number;
+      userName?: string | null;
+      reactionCounts: string;
+      createdAt: number;
+    }
+
+    function renderCard(post: Post): string {
+      const createdAtMs = post.createdAt * 1000;
+      const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
+      const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
+      const categoryLabel =
+        post.category.charAt(0).toUpperCase() + post.category.slice(1);
+      const author = post.isAnonymous ? '---' : (post.userName || '---');
+      const postPath = getLocalePath(`/post/${post.id}`);
+
+      return `
+        <article class="post-card">
+          <div class="post-card-accent"></div>
+          <div class="post-meta">
+            <span class="category-badge">${categoryLabel}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>${author}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>${timeAgo(createdAtMs)}</span>
+          </div>
+          <h3><a href="${postPath}">${post.title}</a></h3>
+          <p class="post-body-preview">${bodyPreview}</p>
+          <div class="post-card-footer">
+            <div class="reaction-bar">
+              <span class="reaction-btn" title="Me too">
+                <span class="reaction-emoji">🙋</span>
+                <span class="reaction-count">${reactions.metoo || 0}</span>
+              </span>
+              <span class="reaction-btn" title="Hug">
+                <span class="reaction-emoji">🫂</span>
+                <span class="reaction-count">${reactions.hug || 0}</span>
+              </span>
+              <span class="reaction-btn" title="Strength">
+                <span class="reaction-emoji">💪</span>
+                <span class="reaction-count">${reactions.strength || 0}</span>
+              </span>
+              <span class="reaction-btn" title="Respect">
+                <span class="reaction-emoji">🎩</span>
+                <span class="reaction-count">${reactions.respect || 0}</span>
+              </span>
+              <span class="reaction-btn" title="Solidarity">
+                <span class="reaction-emoji">🤝</span>
+                <span class="reaction-count">${reactions.solidarity || 0}</span>
+              </span>
+            </div>
+            <a href="${postPath}" class="read-more-link">Read &rarr;</a>
+          </div>
+        </article>`;
+    }
+
+    function renderGrid(data: { posts: Post[]; total: number }): string {
+      if (!data.posts.length) {
+        return '<div class="notice notice-info">No stories yet. Be the first to share.</div>';
+      }
+      return `<div class="posts-grid">${data.posts.map(renderCard).join('')}</div>`;
+    }
+
+    // Shared state
+    let currentCategory = '';
+    let currentSort = 'recent';
+
+    const initParams = new URLSearchParams(window.location.search);
+    currentCategory = initParams.get('category') ?? '';
+    currentSort = initParams.get('sort') ?? 'recent';
+
+    async function loadPosts(category: string, sort: string) {
+      const locale = getLocale();
+      const params = new URLSearchParams({ locale });
+      if (category) params.set('category', category);
+      if (sort && sort !== 'recent') params.set('sort', sort);
+
+      const container = document.getElementById('posts-container');
+      if (!container) return;
+
+      container.style.opacity = '0.5';
+
+      try {
+        const res = await fetch(`/api/posts?${params}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json() as { posts: Post[]; total: number };
+        container.innerHTML = renderGrid(data);
+      } catch {
+        // leave current content
+      } finally {
+        container.style.opacity = '';
+      }
+    }
+
+    function buildUrl(category: string, sort: string): string {
+      const basePath = getLocalePath('/');
+      const params = new URLSearchParams();
+      if (category) params.set('category', category);
+      if (sort && sort !== 'recent') params.set('sort', sort);
+      const qs = params.toString();
+      return qs ? `${basePath}?${qs}` : basePath;
+    }
+
+    function setActivePill(category: string) {
+      document.querySelectorAll('.sidebar-cat-item').forEach((el) => {
+        const item = el as HTMLElement;
+        const match = category ? item.dataset.category === category : item.dataset.category === '';
+        item.classList.toggle('active', match);
+      });
+      document.querySelectorAll('.category-pill').forEach((el) => {
+        const pill = el as HTMLElement;
+        const match = category ? pill.dataset.category === category : pill.dataset.category === '';
+        pill.classList.toggle('active', match);
+      });
+    }
+
+    function setActiveSort(sort: string) {
+      document.querySelectorAll('.sort-tab').forEach((el) => {
+        const tab = el as HTMLElement;
+        const match = tab.dataset.sort === sort;
+        tab.classList.toggle('active', match);
+        tab.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
+    }
+
+    // Category clicks
+    document.addEventListener('click', (e) => {
+      const target = (e.target as Element).closest('[data-category]');
+      if (!target || (!target.classList.contains('sidebar-cat-item') && !target.classList.contains('category-pill'))) return;
+      e.preventDefault();
+      currentCategory = (target as HTMLElement).dataset.category ?? '';
+      setActivePill(currentCategory);
+      const newUrl = buildUrl(currentCategory, currentSort);
+      history.pushState({ category: currentCategory, sort: currentSort }, '', newUrl);
+      loadPosts(currentCategory, currentSort);
+    });
+
+    // Sort tab clicks
+    document.addEventListener('click', (e) => {
+      const target = (e.target as Element).closest('.sort-tab');
+      if (!target) return;
+      e.preventDefault();
+      currentSort = (target as HTMLElement).dataset.sort ?? 'recent';
+      setActiveSort(currentSort);
+      const newUrl = buildUrl(currentCategory, currentSort);
+      history.pushState({ category: currentCategory, sort: currentSort }, '', newUrl);
+      loadPosts(currentCategory, currentSort);
+    });
+
+    // Back/forward
+    window.addEventListener('popstate', (e) => {
+      const state = e.state as { category?: string; sort?: string } | null;
+      currentCategory = state?.category ?? '';
+      currentSort = state?.sort ?? 'recent';
+      setActivePill(currentCategory);
+      setActiveSort(currentSort);
+      loadPosts(currentCategory, currentSort);
+    });
+  })();
+</script>

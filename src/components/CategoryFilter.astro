@@ -1,35 +1,94 @@
 ---
-import { CATEGORIES, type Category } from '../db/schema';
+import { CATEGORIES } from '../db/schema';
 import { t, localePath, type Locale } from '../i18n';
+import { Briefcase, TrendingUp, GraduationCap, Heart, HeartPulse, DollarSign, Ellipsis, LayoutGrid } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
   activeCategory?: string;
+  /** When true, renders as a vertical sidebar list with icons + counts */
+  sidebar?: boolean;
+  /** Post counts per category key, e.g. { career: 12, business: 4 } */
+  counts?: Record<string, number>;
 }
 
-const { locale, activeCategory } = Astro.props;
+const { locale, activeCategory, sidebar = false, counts = {} } = Astro.props;
 const i = t(locale);
 
 const basePath = localePath(locale, '/');
+
+const categoryIcons: Record<string, any> = {
+  career:        Briefcase,
+  business:      TrendingUp,
+  education:     GraduationCap,
+  relationships: Heart,
+  health:        HeartPulse,
+  financial:     DollarSign,
+  other:         Ellipsis,
+};
+
+const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
 ---
 
-<ul class="category-filter">
-  <li>
-    <a
-      href={basePath}
-      class:list={['category-pill', { active: !activeCategory }]}
-    >
-      {i.categories.all}
-    </a>
-  </li>
-  {CATEGORIES.map((cat) => (
+{sidebar ? (
+  <ul class="sidebar-categories">
     <li>
       <a
-        href={`${basePath}?category=${cat}`}
-        class:list={['category-pill', { active: activeCategory === cat }]}
+        href={basePath}
+        class:list={['sidebar-cat-item', { active: !activeCategory }]}
+        data-category=""
       >
-        {i.categories[cat as keyof typeof i.categories]}
+        <span class="sidebar-cat-icon"><LayoutGrid size={15} aria-hidden="true" /></span>
+        <span class="sidebar-cat-label">{i.categories.all}</span>
+        {totalCount > 0 && <span class="sidebar-cat-count">{totalCount}</span>}
       </a>
     </li>
-  ))}
-</ul>
+    {CATEGORIES.map((cat) => {
+      const Icon = categoryIcons[cat];
+      const count = counts[cat];
+      return (
+        <li>
+          <a
+            href={`${basePath}?category=${cat}`}
+            class:list={['sidebar-cat-item', 'category-pill', { active: activeCategory === cat }]}
+            data-category={cat}
+          >
+            <span class="sidebar-cat-icon">
+              {Icon && <Icon size={15} aria-hidden="true" />}
+            </span>
+            <span class="sidebar-cat-label">{i.categories[cat as keyof typeof i.categories]}</span>
+            {count !== undefined && <span class="sidebar-cat-count">{count}</span>}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+) : (
+  <ul class="category-filter">
+    <li>
+      <a
+        href={basePath}
+        class:list={['category-pill', { active: !activeCategory }]}
+        data-category=""
+      >
+        <LayoutGrid size={14} aria-hidden="true" />
+        {i.categories.all}
+      </a>
+    </li>
+    {CATEGORIES.map((cat) => {
+      const Icon = categoryIcons[cat];
+      return (
+        <li>
+          <a
+            href={`${basePath}?category=${cat}`}
+            class:list={['category-pill', { active: activeCategory === cat }]}
+            data-category={cat}
+          >
+            {Icon && <Icon size={14} aria-hidden="true" />}
+            {i.categories[cat as keyof typeof i.categories]}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+)}

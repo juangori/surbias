@@ -7,11 +7,12 @@
     {
       "binding": "DB",
       "database_name": "surbias-db",
-      "database_id": "REPLACE_WITH_ACTUAL_D1_ID"
+      "database_id": "c177077b-3b1b-4abe-8c7e-602cf525e04e",
+      "migrations_dir": "src/db/migrations"
     }
   ],
   "vars": {
-    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAC1DD_8axJV9ZBhi",
     "BETTER_AUTH_URL": "https://surbias.com",
     "ADMIN_EMAIL": "admin@surbias.com"
   }

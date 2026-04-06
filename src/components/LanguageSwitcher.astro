@@ -12,17 +12,17 @@ function switchLocalePath(targetLocale: Locale): string {
   // Remove current locale prefix if any
   let path = currentPath;
   for (const loc of LOCALES) {
-    if (loc !== 'es' && path.startsWith(`/${loc}/`)) {
+    if (loc !== 'en' && path.startsWith(`/${loc}/`)) {
       path = path.slice(loc.length + 1);
       break;
     }
-    if (loc !== 'es' && path === `/${loc}`) {
+    if (loc !== 'en' && path === `/${loc}`) {
       path = '/';
       break;
     }
   }
   // Add target locale prefix
-  if (targetLocale === 'es') return path;
+  if (targetLocale === 'en') return path;
   return `/${targetLocale}${path}`;
 }
 ---

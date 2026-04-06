@@ -20,34 +20,56 @@ const i = t(locale);
 
 const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
 const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
-const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
 const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
 const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
 ---
 
 <article class="post-card">
+  <div class="post-card-accent"></div>
+
+  <!-- Metadata -->
   <div class="post-meta">
     <span class="category-badge">{categoryLabel}</span>
+    <span class="post-meta-sep">&bull;</span>
     <span>{post.isAnonymous ? '---' : (post.userName || '---')}</span>
+    <span class="post-meta-sep">&bull;</span>
     <span>{timeAgo(createdAt, locale)}</span>
   </div>
-  <h3><a href={localePath(locale, `/post/${post.id}`)}>{post.title}</a></h3>
+
+  <!-- Title -->
+  <h3>
+    <a href={localePath(locale, `/post/${post.id}`)}>{post.title}</a>
+  </h3>
+
+  <!-- Body preview -->
   <p class="post-body-preview">{bodyPreview}</p>
-  <div class="reaction-bar">
-    <span class="reaction-btn" title={i.reactions.metoo}>
-      {i.reactions.metoo} <span class="reaction-count">{reactions.metoo || 0}</span>
-    </span>
-    <span class="reaction-btn" title={i.reactions.hug}>
-      {i.reactions.hug} <span class="reaction-count">{reactions.hug || 0}</span>
-    </span>
-    <span class="reaction-btn" title={i.reactions.strength}>
-      {i.reactions.strength} <span class="reaction-count">{reactions.strength || 0}</span>
-    </span>
-    <span class="reaction-btn" title={i.reactions.respect}>
-      {i.reactions.respect} <span class="reaction-count">{reactions.respect || 0}</span>
-    </span>
-    <span class="reaction-btn" title={i.reactions.solidarity}>
-      {i.reactions.solidarity} <span class="reaction-count">{reactions.solidarity || 0}</span>
-    </span>
+
+  <!-- Footer: reactions + read more -->
+  <div class="post-card-footer">
+    <div class="reaction-bar">
+      <span class="reaction-btn" title={i.reactions.metoo}>
+        <span class="reaction-emoji">🙋</span>
+        <span class="reaction-count">{reactions.metoo || 0}</span>
+      </span>
+      <span class="reaction-btn" title={i.reactions.hug}>
+        <span class="reaction-emoji">🫂</span>
+        <span class="reaction-count">{reactions.hug || 0}</span>
+      </span>
+      <span class="reaction-btn" title={i.reactions.strength}>
+        <span class="reaction-emoji">💪</span>
+        <span class="reaction-count">{reactions.strength || 0}</span>
+      </span>
+      <span class="reaction-btn" title={i.reactions.respect}>
+        <span class="reaction-emoji">🎩</span>
+        <span class="reaction-count">{reactions.respect || 0}</span>
+      </span>
+      <span class="reaction-btn" title={i.reactions.solidarity}>
+        <span class="reaction-emoji">🤝</span>
+        <span class="reaction-count">{reactions.solidarity || 0}</span>
+      </span>
+    </div>
+    <a href={localePath(locale, `/post/${post.id}`)} class="read-more-link">
+      Read &rarr;
+    </a>
   </div>
 </article>

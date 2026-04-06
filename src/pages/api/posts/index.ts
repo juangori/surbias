@@ -9,6 +9,17 @@ import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
 import { validatePost, isHoneypotFilled } from '../../../lib/moderation';
 
 const POSTS_PER_PAGE = 20;
+// Fetch extra rows for JS-side sorting (hot/popular) so we have enough after sort
+const SORT_FETCH_MULTIPLIER = 5;
+
+function totalReactions(reactionCounts: string): number {
+  try {
+    const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
+    return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
+  } catch {
+    return 0;
+  }
+}
 
 export const GET: APIRoute = async ({ request }) => {
   const db = getDb(env.DB);
@@ -17,21 +28,20 @@ export const GET: APIRoute = async ({ request }) => {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
   const category = url.searchParams.get('category');
   const locale = url.searchParams.get('locale');
+  const sort = url.searchParams.get('sort') || 'recent'; // 'recent' | 'hot' | 'popular'
   const offset = (page - 1) * POSTS_PER_PAGE;
 
   const conditions = [eq(posts.status, 'published')];
   if (category) conditions.push(eq(posts.category, category));
   if (locale) conditions.push(eq(posts.locale, locale));
 
-  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
+  // For 'hot', restrict to last 7 days
+  if (sort === 'hot') {
+    const sevenDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
+    conditions.push(sql`${posts.createdAt} >= ${sevenDaysAgo}`);
+  }
 
-  const results = await db
-    .select()
-    .from(posts)
-    .where(where)
-    .orderBy(desc(posts.createdAt))
-    .limit(POSTS_PER_PAGE)
-    .offset(offset);
+  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
@@ -39,6 +49,31 @@ export const GET: APIRoute = async ({ request }) => {
     .where(where);
 
   const total = countResult[0]?.count || 0;
+
+  let results;
+
+  if (sort === 'hot' || sort === 'popular') {
+    // Fetch a larger batch and sort in JS by total reactions
+    const fetchLimit = POSTS_PER_PAGE * SORT_FETCH_MULTIPLIER;
+    const allRows = await db
+      .select()
+      .from(posts)
+      .where(where)
+      .orderBy(desc(posts.createdAt))
+      .limit(fetchLimit);
+
+    allRows.sort((a, b) => totalReactions(b.reactionCounts) - totalReactions(a.reactionCounts));
+    results = allRows.slice(offset, offset + POSTS_PER_PAGE);
+  } else {
+    // Default: recent — order by createdAt DESC
+    results = await db
+      .select()
+      .from(posts)
+      .where(where)
+      .orderBy(desc(posts.createdAt))
+      .limit(POSTS_PER_PAGE)
+      .offset(offset);
+  }
 
   return new Response(JSON.stringify({
     posts: results,
@@ -57,12 +92,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const title = (formData.get('title') as string)?.trim();
   const body = (formData.get('body') as string)?.trim();
   const category = formData.get('category') as string;
-  const locale = (formData.get('locale') as string) || 'es';
+  const locale = (formData.get('locale') as string) || 'en';
   const isAnonymous = formData.get('is_anonymous') === 'on';
   const honeypot = formData.get('website') as string;
   const turnstileToken = formData.get('cf-turnstile-response') as string;
 
-  const localePrefix = locale === 'es' ? '' : `/${locale}`;
+  const localePrefix = locale === 'en' ? '' : `/${locale}`;
 
   if (isHoneypotFilled(honeypot)) {
     return redirect(`${localePrefix}/post/new?error=generic`, 302);
