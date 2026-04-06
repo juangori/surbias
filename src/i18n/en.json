@@ -80,9 +80,21 @@
     "empty": "No stories yet. Be the first!",
     "previous": "Previous",
     "next": "Next",
-    "footer_text": "Surbias — Because failing is normal.",
+    "footer_text": "Because failing is normal.",
     "footer_coffee": "Buy us a coffee",
-    "page": "Page"
+    "page": "Page",
+    "sort_recent": "Recent",
+    "sort_hot": "Hot",
+    "sort_popular": "Popular",
+    "categories_title": "Categories",
+    "about_sidebar": "A space to share failure stories without sugar-coating. Because failing is normal.",
+    "stats": "Stats",
+    "stories": "stories",
+    "share_cta": "Share your story",
+    "comment": "Comment",
+    "comments": "Comments",
+    "write_comment": "Write a comment...",
+    "anonymous": "Anonymous"
   },
   "errors": {
     "title_too_short": "Title is too short",

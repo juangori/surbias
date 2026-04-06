@@ -1,10 +1,12 @@
 ---
 import Base from '../../layouts/Base.astro';
 import ReactionBar from '../../components/ReactionBar.astro';
+import CategoryFilter from '../../components/CategoryFilter.astro';
 import { getLocaleFromUrl, t, timeAgo, localePath } from '../../i18n';
 import { getDb } from '../../db';
 import { posts } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { comments as commentsTable } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 
 interface Props {
@@ -23,6 +25,11 @@ if (!post) {
   return Astro.redirect(localePath(locale, '/'));
 }
 
+const postComments = await db.select().from(commentsTable)
+  .where(eq(commentsTable.postId, postId))
+  .orderBy(desc(commentsTable.createdAt))
+  .limit(50);
+
 const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
 const reactionCounts = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
 const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
@@ -37,43 +44,83 @@ const isFlagged = post.status === 'flagged';
     </a>
   </div>
 
-  <article style="max-width: 700px; margin: 0 auto;">
-    {isFlagged && (
-      <div class="flagged-notice">{i.moderation.flagged}</div>
-    )}
-
-    {!isFlagged && (
-      <div class="post-detail-card">
-        <!-- Metadata row -->
-        <div class="post-meta" style="margin-bottom: 1.25rem;">
-          <span class="category-badge">{categoryLabel}</span>
-          <span class="post-meta-sep">&bull;</span>
-          <span>{post.isAnonymous ? '---' : 'User'}</span>
-          <span class="post-meta-sep">&bull;</span>
-          <span>{timeAgo(createdAt, locale)}</span>
-        </div>
-
-        <!-- Title -->
-        <h1 class="post-detail-title">{post.title}</h1>
-
-        <!-- Body -->
-        <div class="post-detail-body">{post.body}</div>
-
-        <!-- Reactions -->
-        <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
-
-        <!-- Report -->
-        <div class="post-detail-actions">
-          <span style="font-size: 0.8rem; color: var(--surbias-text-muted);">
-            &#128276; {i.moderation.report ? i.moderation.report.split(' ')[0] : ''}
-          </span>
-          <button class="report-btn" onclick={`reportPost('${post.id}')`}>
-            &#9872; {i.moderation.report}
-          </button>
-        </div>
+  <div class="home-content">
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <p class="sidebar-title">Categories</p>
+        <CategoryFilter locale={locale} sidebar={true} />
       </div>
-    )}
-  </article>
+    </aside>
+
+    <div class="feed">
+      {isFlagged && (
+        <div class="flagged-notice">{i.moderation.flagged}</div>
+      )}
+
+      {!isFlagged && (
+        <div class="post-detail-card">
+          <!-- Metadata row -->
+          <div class="post-meta" style="margin-bottom: 1.25rem;">
+            <span class="category-badge">{categoryLabel}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>{post.isAnonymous ? '---' : 'User'}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>{timeAgo(createdAt, locale)}</span>
+          </div>
+
+          <!-- Title -->
+          <h1 class="post-detail-title">{post.title}</h1>
+
+          <!-- Body -->
+          <div class="post-detail-body">{post.body}</div>
+
+          <!-- Reactions -->
+          <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
+
+          <!-- Comments section -->
+          <div class="comments-section">
+            <h3 class="comments-title">Comments ({postComments.length})</h3>
+
+            <!-- Comment form -->
+            <div class="comment-form-wrapper">
+              <textarea id="comment-body" placeholder="Write a comment..." maxlength="2000" rows="2" class="comment-input"></textarea>
+              <div class="comment-form-footer">
+                <label class="anonymous-toggle">
+                  <input type="checkbox" id="comment-anon" checked class="toggle-checkbox" />
+                  <span class="toggle-label">Anonymous</span>
+                </label>
+                <button id="submit-comment" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Comment</button>
+              </div>
+            </div>
+
+            <!-- Comments list -->
+            <div id="comments-list">
+              {postComments.map((c) => {
+                const cDate = c.createdAt instanceof Date ? c.createdAt : new Date(Number(c.createdAt) * 1000);
+                return (
+                  <div class="comment-card">
+                    <div class="comment-meta">
+                      <span>{c.isAnonymous ? 'Anonymous' : (c.authorName || 'Anonymous')}</span>
+                      <span class="post-meta-sep">&bull;</span>
+                      <span>{timeAgo(cDate, locale)}</span>
+                    </div>
+                    <p class="comment-body">{c.body}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <!-- Report -->
+          <div class="post-detail-actions">
+            <button class="report-btn" onclick={`reportPost('${post.id}')`}>
+              &#9872; {i.moderation.report}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
 </Base>
 
 <script is:inline>
@@ -99,4 +146,30 @@ const isFlagged = post.status === 'flagged';
       }
     } catch {}
   }
+</script>
+
+<script is:inline define:vars={{ postId }}>
+  document.getElementById('submit-comment')?.addEventListener('click', async function() {
+    const bodyEl = document.getElementById('comment-body');
+    const anonEl = document.getElementById('comment-anon');
+    const body = bodyEl.value.trim();
+    if (!body || body.length < 2) return;
+
+    try {
+      const res = await fetch('/api/posts/' + postId + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: body, isAnonymous: anonEl.checked }),
+      });
+      if (res.ok) {
+        bodyEl.value = '';
+        // Add comment to the list
+        const list = document.getElementById('comments-list');
+        const div = document.createElement('div');
+        div.className = 'comment-card';
+        div.innerHTML = '<div class="comment-meta"><span>Anonymous</span><span class="post-meta-sep">&bull;</span><span>< 1 min</span></div><p class="comment-body">' + body.replace(/</g, '&lt;') + '</p>';
+        list.prepend(div);
+      }
+    } catch {}
+  });
 </script>

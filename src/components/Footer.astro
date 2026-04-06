@@ -10,17 +10,10 @@ const i = t(locale);
 ---
 
 <footer class="site-footer">
-  <div class="footer-inner">
-    <!-- Brand -->
-    <a href={localePath(locale, '/')} class="footer-logo" aria-label="Surbias home">
-      <span class="logo-mark" aria-hidden="true">✕</span>
-      <span class="logo-text">Surbias</span>
-    </a>
+  <div class="footer-grid">
 
-    <p class="footer-tagline">{i.common.footer_text}</p>
-
-    <!-- Nav links -->
-    <nav class="footer-nav" aria-label="Footer navigation">
+    <!-- Column 1: Nav links -->
+    <nav class="footer-col footer-col--left" aria-label="Footer navigation">
       <a href={localePath(locale, '/')}>{i.nav.home}</a>
       <span class="footer-sep" aria-hidden="true">|</span>
       <a href={localePath(locale, '/about')}>{i.nav.about}</a>
@@ -28,128 +21,171 @@ const i = t(locale);
       <a href={localePath(locale, '/post/new')}>{i.nav.share}</a>
     </nav>
 
-    <!-- Ko-fi -->
-    <a
-      href="https://ko-fi.com/surbias"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="footer-coffee"
-    >
-      ☕ {i.common.footer_coffee}
-    </a>
+    <!-- Column 2: Brand (center) -->
+    <div class="footer-col footer-col--center">
+      <a href={localePath(locale, '/')} class="footer-brand" aria-label="Surbias home">
+        <img src="/logo.png" alt="" width="24" height="24" />
+        <span class="footer-brand-name">SURBIAS</span>
+      </a>
+      <p class="footer-tagline">{i.common.footer_text}</p>
+      <p class="footer-copy">© 2026 Surbias</p>
+    </div>
 
-    <!-- Copyright -->
-    <p class="footer-copy">© 2026 Surbias</p>
+    <!-- Column 3: Support -->
+    <div class="footer-col footer-col--right">
+      <a
+        href="https://ko-fi.com/surbias"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-coffee"
+      >
+        ☕ {i.common.footer_coffee}
+      </a>
+      <a href="/terms" class="footer-legal-link">Terms of Service</a>
+      <a href="/privacy" class="footer-legal-link">Privacy Policy</a>
+    </div>
+
   </div>
 </footer>
 
 <style>
   .site-footer {
     margin-top: auto;
-    border-top: 1px solid var(--color-border);
-    background-color: var(--color-surface-raised);
+    border-top: 1px solid var(--surbias-border);
+    background-color: var(--surbias-header-bg);
   }
 
-  .footer-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-4);
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: start;
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: var(--space-10) var(--space-4) var(--space-8);
-    text-align: center;
+    padding: 2.5rem 2rem 2rem;
+    gap: 1.5rem;
   }
 
-  /* Logo */
-  .footer-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-  }
-
-  .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    background: var(--color-primary);
-    color: #fff;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .logo-text {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-    letter-spacing: -0.02em;
-  }
-
-  /* Tagline */
-  .footer-tagline {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-
-  /* Nav row */
-  .footer-nav {
+  /* Columns */
+  .footer-col {
     display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
-  .footer-nav a {
+  .footer-col--left {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .footer-col--center {
+    text-align: center;
+    align-items: center;
+  }
+
+  .footer-col--right {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  /* Nav links (col 1) */
+  .footer-col--left a {
     font-size: 0.875rem;
-    color: var(--color-text-secondary);
+    color: var(--surbias-text-muted);
     text-decoration: none;
     transition: color 0.15s;
   }
 
-  .footer-nav a:hover {
-    color: var(--color-primary);
+  .footer-col--left a:hover {
+    color: var(--surbias-primary);
   }
 
   .footer-sep {
-    color: var(--color-border);
+    color: var(--surbias-border);
     font-size: 0.75rem;
     user-select: none;
+    line-height: 1;
   }
 
-  /* Ko-fi link */
+  /* Brand (col 2) */
+  .footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-brand-name {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--surbias-text);
+  }
+
+  .footer-tagline {
+    font-size: 0.8125rem;
+    color: var(--surbias-text-muted);
+    margin: 0;
+  }
+
+  .footer-copy {
+    font-size: 0.75rem;
+    color: var(--surbias-text-light);
+    margin: 0;
+  }
+
+  /* Ko-fi button (col 3) */
   .footer-coffee {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 7px 14px;
-    background: var(--color-amber-soft);
-    color: var(--color-amber-dark);
-    font-size: 0.82rem;
+    background: #fff8e1;
+    color: #92600a;
+    font-size: 0.8125rem;
     font-weight: 600;
     border-radius: 8px;
     text-decoration: none;
-    transition: background-color 0.15s;
+    border: 1px solid #f0d080;
+    transition: background-color 0.15s, border-color 0.15s;
+    margin-bottom: 0.25rem;
   }
 
   .footer-coffee:hover {
-    background: var(--color-amber-soft-hover);
+    background: #fff0b3;
+    border-color: #d4a800;
   }
 
-  /* Copyright */
-  .footer-copy {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin: 0;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--color-border);
-    width: 100%;
-    text-align: center;
+  /* Legal links (col 3) */
+  .footer-legal-link {
+    font-size: 0.8rem;
+    color: var(--surbias-text-light);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .footer-legal-link:hover {
+    color: var(--surbias-primary);
+  }
+
+  /* Mobile: stack to single column centered */
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .footer-col--left,
+    .footer-col--right {
+      text-align: center;
+      align-items: center;
+    }
+
+    .footer-col--left {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
   }
 </style>

@@ -80,9 +80,21 @@
     "empty": "Pas encore d'histoires. Soyez le premier !",
     "previous": "Précédent",
     "next": "Suivant",
-    "footer_text": "Surbias — Parce qu'échouer, c'est normal.",
+    "footer_text": "Parce qu'échouer, c'est normal.",
     "footer_coffee": "Offrez-nous un café",
-    "page": "Page"
+    "page": "Page",
+    "sort_recent": "Récents",
+    "sort_hot": "Tendance",
+    "sort_popular": "Populaires",
+    "categories_title": "Catégories",
+    "about_sidebar": "Un espace pour partager vos échecs sans les enjoliver. Parce qu'échouer, c'est normal.",
+    "stats": "Statistiques",
+    "stories": "histoires",
+    "share_cta": "Partagez votre histoire",
+    "comment": "Commenter",
+    "comments": "Commentaires",
+    "write_comment": "Écrivez un commentaire...",
+    "anonymous": "Anonyme"
   },
   "errors": {
     "title_too_short": "Le titre est trop court",

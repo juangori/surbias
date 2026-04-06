@@ -1,7 +1,7 @@
 ---
 import { t, localePath, type Locale } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import { Menu, X, House, Info, PenLine, LogIn } from '@lucide/astro';
+import { Menu, X, House, Info, LogIn } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
@@ -15,8 +15,8 @@ const i = t(locale);
   <nav class="site-nav">
     <!-- Logo -->
     <a href={localePath(locale, '/')} class="site-logo" aria-label="Surbias home">
-      <span class="logo-mark" aria-hidden="true">✕</span>
-      <span class="logo-text">Surbias</span>
+      <img src="/logo.png" alt="" width="28" height="28" class="logo-icon" />
+      <span class="logo-text">SURBIAS</span>
     </a>
 
     <!-- Desktop nav -->
@@ -32,11 +32,6 @@ const i = t(locale);
         </a>
       </li>
       <li>
-        <a href={localePath(locale, '/post/new')} class="btn-cta">
-          <PenLine size={15} aria-hidden="true" />{i.nav.share}
-        </a>
-      </li>
-      <li>
         <a href={localePath(locale, '/login')} class="nav-link nav-link--subtle">
           <LogIn size={15} aria-hidden="true" />{i.nav.login}
         </a>
@@ -44,13 +39,13 @@ const i = t(locale);
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>
+      <li>
+        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="nav-coffee">☕ Buy us a coffee</a>
+      </li>
     </ul>
 
     <!-- Mobile: right-side controls -->
     <div class="mobile-controls">
-      <a href={localePath(locale, '/post/new')} class="btn-cta btn-cta--small">
-        {i.nav.share}
-      </a>
       <button
         class="mobile-nav-toggle"
         aria-label="Toggle navigation menu"
@@ -83,6 +78,9 @@ const i = t(locale);
       </li>
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
+      </li>
+      <li>
+        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="nav-coffee">☕ Buy us a coffee</a>
       </li>
     </ul>
   </div>
@@ -126,9 +124,8 @@ const i = t(locale);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    max-width: var(--container-max);
-    margin: 0 auto;
-    padding: 0 var(--space-4);
+    max-width: 100%;
+    padding: 0 2.5rem;
     height: 60px;
     gap: var(--space-4);
   }
@@ -142,25 +139,17 @@ const i = t(locale);
     flex-shrink: 0;
   }
 
-  .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: var(--color-primary);
-    color: #fff;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1;
+  .logo-icon {
+    display: block;
+    flex-shrink: 0;
   }
 
   .logo-text {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--color-text-primary);
-    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   /* Desktop nav links */
@@ -230,6 +219,22 @@ const i = t(locale);
   .nav-lang {
     display: flex;
     align-items: center;
+  }
+
+  /* Buy us a coffee button */
+  .nav-coffee {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    background: #f8f0e3;
+    color: #8b6914;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .nav-coffee:hover {
+    background: #f0e4cc;
   }
 
   /* Mobile controls (CTA + hamburger) */

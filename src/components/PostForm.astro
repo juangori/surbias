@@ -65,12 +65,12 @@ const i = t(locale);
         maxlength="5000"
         required
         class="inline-body"
-        rows="3"
+        rows="2"
       ></textarea>
       <div class="form-footer">
         <label class="anonymous-toggle">
-          <input type="checkbox" name="is_anonymous" checked />
-          {i.post.anonymous_label}
+          <input type="checkbox" name="is_anonymous" checked class="toggle-checkbox" />
+          <span class="toggle-label">{i.post.anonymous_label}</span>
         </label>
         <button type="submit" class="btn-cta">{i.post.submit}</button>
       </div>

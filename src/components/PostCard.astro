@@ -25,6 +25,7 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
 ---
 
 <article class="post-card">
+  <a href={localePath(locale, `/post/${post.id}`)} class="post-card-link" aria-label={post.title}></a>
   <div class="post-card-accent"></div>
 
   <!-- Metadata -->
@@ -48,23 +49,23 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
   <div class="post-card-footer">
     <div class="reaction-bar">
       <span class="reaction-btn" title={i.reactions.metoo}>
-        <span class="reaction-emoji">🙋</span>
+        <span class="reaction-label">{i.reactions.metoo}</span>
         <span class="reaction-count">{reactions.metoo || 0}</span>
       </span>
       <span class="reaction-btn" title={i.reactions.hug}>
-        <span class="reaction-emoji">🫂</span>
+        <span class="reaction-label">{i.reactions.hug}</span>
         <span class="reaction-count">{reactions.hug || 0}</span>
       </span>
       <span class="reaction-btn" title={i.reactions.strength}>
-        <span class="reaction-emoji">💪</span>
+        <span class="reaction-label">{i.reactions.strength}</span>
         <span class="reaction-count">{reactions.strength || 0}</span>
       </span>
       <span class="reaction-btn" title={i.reactions.respect}>
-        <span class="reaction-emoji">🎩</span>
+        <span class="reaction-label">{i.reactions.respect}</span>
         <span class="reaction-count">{reactions.respect || 0}</span>
       </span>
       <span class="reaction-btn" title={i.reactions.solidarity}>
-        <span class="reaction-emoji">🤝</span>
+        <span class="reaction-label">{i.reactions.solidarity}</span>
         <span class="reaction-count">{reactions.solidarity || 0}</span>
       </span>
     </div>

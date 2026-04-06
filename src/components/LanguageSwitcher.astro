@@ -1,5 +1,5 @@
 ---
-import { LOCALES, LOCALE_NAMES, type Locale } from '../i18n';
+import { LOCALES, type Locale } from '../i18n';
 
 interface Props {
   locale: Locale;
@@ -7,6 +7,14 @@ interface Props {
 }
 
 const { locale, currentPath } = Astro.props;
+
+const LOCALE_FLAGS: Record<Locale, string> = {
+  en: '🇺🇸',
+  es: '🇪🇸',
+  de: '🇩🇪',
+  fr: '🇫🇷',
+  pt: '🇧🇷',
+};
 
 function switchLocalePath(targetLocale: Locale): string {
   // Remove current locale prefix if any
@@ -31,8 +39,27 @@ function switchLocalePath(targetLocale: Locale): string {
   <select onchange="window.location.href = this.value">
     {LOCALES.map((loc) => (
       <option value={switchLocalePath(loc)} selected={loc === locale}>
-        {LOCALE_NAMES[loc]}
+        {LOCALE_FLAGS[loc]}
       </option>
     ))}
   </select>
 </div>
+
+<style>
+  .lang-switcher select {
+    width: auto;
+    font-size: 1.1rem;
+    padding: 4px 24px 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border, #d4e3d9);
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23556b5c'/%3E%3C/svg%3E") no-repeat right 6px center;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: 1;
+  }
+
+  .lang-switcher select:hover {
+    background-color: var(--color-surface-raised, #f0f5f1);
+  }
+</style>

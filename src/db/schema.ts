@@ -96,3 +96,13 @@ export const flags = sqliteTable('flags', {
 }, (table) => [
   uniqueIndex('flag_unique').on(table.targetType, table.targetId, table.reporterHash),
 ]);
+
+export const comments = sqliteTable('comments', {
+  id: text('id').primaryKey(),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  body: text('body').notNull(),
+  authorName: text('author_name'),
+  isAnonymous: integer('is_anonymous', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});

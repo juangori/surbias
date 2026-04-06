@@ -80,9 +80,21 @@
     "empty": "Todavía no hay historias. ¡Sé el primero!",
     "previous": "Anterior",
     "next": "Siguiente",
-    "footer_text": "Surbias — Porque fallar es normal.",
+    "footer_text": "Porque fallar es normal.",
     "footer_coffee": "Invitanos un café",
-    "page": "Página"
+    "page": "Página",
+    "sort_recent": "Recientes",
+    "sort_hot": "Tendencia",
+    "sort_popular": "Populares",
+    "categories_title": "Categorías",
+    "about_sidebar": "Un espacio para compartir historias de fracaso sin endulzar. Porque fallar es normal.",
+    "stats": "Estadísticas",
+    "stories": "historias",
+    "share_cta": "Compartí tu historia",
+    "comment": "Comentar",
+    "comments": "Comentarios",
+    "write_comment": "Escribí un comentario...",
+    "anonymous": "Anónimo"
   },
   "errors": {
     "title_too_short": "El título es muy corto",

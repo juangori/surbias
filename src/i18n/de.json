@@ -80,9 +80,21 @@
     "empty": "Noch keine Geschichten. Sei der Erste!",
     "previous": "Zurück",
     "next": "Weiter",
-    "footer_text": "Surbias — Weil Scheitern normal ist.",
+    "footer_text": "Weil Scheitern normal ist.",
     "footer_coffee": "Kauf uns einen Kaffee",
-    "page": "Seite"
+    "page": "Seite",
+    "sort_recent": "Neueste",
+    "sort_hot": "Aktuell",
+    "sort_popular": "Beliebt",
+    "categories_title": "Kategorien",
+    "about_sidebar": "Ein Raum, um Geschichten des Scheiterns zu teilen. Weil Scheitern normal ist.",
+    "stats": "Statistiken",
+    "stories": "Geschichten",
+    "share_cta": "Teile deine Geschichte",
+    "comment": "Kommentieren",
+    "comments": "Kommentare",
+    "write_comment": "Schreibe einen Kommentar...",
+    "anonymous": "Anonym"
   },
   "errors": {
     "title_too_short": "Titel ist zu kurz",

@@ -80,9 +80,21 @@
     "empty": "Nenhuma história ainda. Seja o primeiro!",
     "previous": "Anterior",
     "next": "Próximo",
-    "footer_text": "Surbias — Porque fracassar é normal.",
+    "footer_text": "Porque fracassar é normal.",
     "footer_coffee": "Pague-nos um café",
-    "page": "Página"
+    "page": "Página",
+    "sort_recent": "Recentes",
+    "sort_hot": "Em alta",
+    "sort_popular": "Populares",
+    "categories_title": "Categorias",
+    "about_sidebar": "Um espaço para compartilhar histórias de fracasso sem enfeitar. Porque fracassar é normal.",
+    "stats": "Estatísticas",
+    "stories": "histórias",
+    "share_cta": "Compartilhe sua história",
+    "comment": "Comentar",
+    "comments": "Comentários",
+    "write_comment": "Escreva um comentário...",
+    "anonymous": "Anônimo"
   },
   "errors": {
     "title_too_short": "O título é muito curto",
