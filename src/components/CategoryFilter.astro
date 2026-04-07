@@ -10,9 +10,13 @@ interface Props {
   sidebar?: boolean;
   /** Post counts per category key, e.g. { career: 12, business: 4 } */
   counts?: Record<string, number>;
+  /** Whether the current user is logged in (to show follow toggles) */
+  isLoggedIn?: boolean;
+  /** Set of currently followed categories */
+  followedCategories?: Set<string>;
 }
 
-const { locale, activeCategory, sidebar = false, counts = {} } = Astro.props;
+const { locale, activeCategory, sidebar = false, counts = {}, isLoggedIn = false, followedCategories = new Set() } = Astro.props;
 const i = t(locale);
 
 const basePath = localePath(locale, '/');
@@ -46,8 +50,9 @@ const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
     {CATEGORIES.map((cat) => {
       const Icon = categoryIcons[cat];
       const count = counts[cat];
+      const isFollowed = followedCategories.has(cat);
       return (
-        <li>
+        <li class="sidebar-cat-row">
           <a
             href={`${basePath}?category=${cat}`}
             class:list={['sidebar-cat-item', 'category-pill', { active: activeCategory === cat }]}
@@ -59,6 +64,16 @@ const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
             <span class="sidebar-cat-label">{i.categories[cat as keyof typeof i.categories]}</span>
             {count !== undefined && <span class="sidebar-cat-count">{count}</span>}
           </a>
+          {isLoggedIn && (
+            <button
+              class:list={['cat-follow-btn', { 'is-following': isFollowed }]}
+              data-follow-category={cat}
+              aria-label={isFollowed ? 'Unfollow' : 'Follow'}
+              title={isFollowed ? 'Unfollow' : 'Follow'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill={isFollowed ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </button>
+          )}
         </li>
       );
     })}
@@ -92,3 +107,39 @@ const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
     })}
   </ul>
 )}
+
+<style>
+  .sidebar-cat-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-cat-row .sidebar-cat-item {
+    flex: 1;
+  }
+
+  .cat-follow-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    border-radius: 4px;
+    transition: color 0.15s;
+    padding: 0;
+    margin-left: 2px;
+  }
+
+  .cat-follow-btn:hover {
+    color: var(--color-primary);
+  }
+
+  .cat-follow-btn.is-following {
+    color: var(--color-primary);
+  }
+</style>

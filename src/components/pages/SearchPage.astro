@@ -1,0 +1,138 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { getDb } from '../../db';
+import { posts } from '../../db/schema';
+import { desc, eq, and, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+const db = getDb(env.DB);
+
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+
+let results: typeof posts.$inferSelect[] = [];
+let searched = false;
+
+if (q.length >= 2) {
+  searched = true;
+  const searchTerm = `%${q}%`;
+  results = await db
+    .select()
+    .from(posts)
+    .where(
+      and(
+        eq(posts.status, 'published'),
+        eq(posts.locale, locale),
+        sql`(${posts.title} LIKE ${searchTerm} OR ${posts.body} LIKE ${searchTerm})`
+      )
+    )
+    .orderBy(desc(posts.createdAt))
+    .limit(50);
+}
+---
+
+<Base title={i.nav.search}>
+  <div class="search-page">
+    <h1 class="search-heading">{i.nav.search}</h1>
+
+    <form method="get" action={localePath(locale, '/search')} class="search-form">
+      <div class="search-input-wrapper">
+        <input
+          type="search"
+          name="q"
+          value={q}
+          placeholder={i.common.search_placeholder}
+          class="search-input"
+          autofocus
+          minlength="2"
+          maxlength="100"
+        />
+        <button type="submit" class="search-btn">{i.nav.search}</button>
+      </div>
+    </form>
+
+    {searched && (
+      <p class="search-count">
+        <strong>{results.length}</strong> {i.common.search_results} &ldquo;{q}&rdquo;
+      </p>
+    )}
+
+    {searched && results.length === 0 && (
+      <div class="notice notice-info">{i.common.no_results}</div>
+    )}
+
+    {results.length > 0 && (
+      <div class="posts-grid">
+        {results.map(post => <PostCard locale={locale} post={post} />)}
+      </div>
+    )}
+  </div>
+</Base>
+
+<style>
+  .search-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .search-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    color: var(--surbias-text);
+  }
+
+  .search-form {
+    margin-bottom: 1.5rem;
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--surbias-card-bg);
+    color: var(--surbias-text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input:focus {
+    border-color: var(--surbias-primary);
+  }
+
+  .search-btn {
+    padding: 0.6rem 1.2rem;
+    background: var(--surbias-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .search-btn:hover {
+    background: var(--surbias-primary-hover);
+  }
+
+  .search-count {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--surbias-text-muted);
+  }
+</style>

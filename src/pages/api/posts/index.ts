@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { nanoid } from 'nanoid';
 import { getDb } from '../../../db';
-import { posts } from '../../../db/schema';
+import { posts, tags, postTags } from '../../../db/schema';
 import { desc, eq, and, sql } from 'drizzle-orm';
 import { verifyTurnstile } from '../../../lib/turnstile';
 import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
@@ -30,11 +30,16 @@ export const GET: APIRoute = async ({ request }) => {
   const category = url.searchParams.get('category');
   const locale = url.searchParams.get('locale');
   const sort = url.searchParams.get('sort') || 'recent'; // 'recent' | 'hot' | 'popular'
+  const query = url.searchParams.get('q');
   const offset = (page - 1) * POSTS_PER_PAGE;
 
   const conditions = [eq(posts.status, 'published')];
   if (category) conditions.push(eq(posts.category, category));
   if (locale) conditions.push(eq(posts.locale, locale));
+  if (query && query.trim().length >= 2) {
+    const searchTerm = `%${query.trim()}%`;
+    conditions.push(sql`(${posts.title} LIKE ${searchTerm} OR ${posts.body} LIKE ${searchTerm})`);
+  }
 
   // For 'hot', restrict to last 7 days
   if (sort === 'hot') {
@@ -135,6 +140,25 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     reactionCounts: '{}',
     createdAt: new Date(),
   });
+
+  // Extract hashtags from body
+  const hashtagPattern = /#(\w{2,30})/g;
+  const tagMatches = body.match(hashtagPattern);
+  if (tagMatches) {
+    const uniqueTags = [...new Set(tagMatches.map(t => t.slice(1).toLowerCase()))].slice(0, 5);
+    for (const tagName of uniqueTags) {
+      const existing = await db.select().from(tags).where(eq(tags.name, tagName)).limit(1);
+      let tagId: string;
+      if (existing[0]) {
+        tagId = existing[0].id;
+        await db.update(tags).set({ count: sql`${tags.count} + 1` }).where(eq(tags.id, tagId));
+      } else {
+        tagId = nanoid(12);
+        await db.insert(tags).values({ id: tagId, name: tagName, count: 1 });
+      }
+      await db.insert(postTags).values({ id: nanoid(12), postId: id, tagId }).catch(() => {});
+    }
+  }
 
   return redirect(`${localePrefix}/post/${id}`, 302);
 };

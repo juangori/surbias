@@ -61,6 +61,14 @@ export const POST: APIRoute = async ({ request }) => {
       if (!commentId) return new Response(JSON.stringify({ error: 'Missing commentId' }), { status: 400 });
       await db.delete(comments).where(eq(comments.id, commentId));
 
+    } else if (action === 'pin_post') {
+      if (!postId) return new Response(JSON.stringify({ error: 'postId required' }), { status: 400 });
+      await db.update(posts).set({ pinned: true }).where(eq(posts.id, postId));
+
+    } else if (action === 'unpin_post') {
+      if (!postId) return new Response(JSON.stringify({ error: 'postId required' }), { status: 400 });
+      await db.update(posts).set({ pinned: false }).where(eq(posts.id, postId));
+
     } else {
       return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
     }

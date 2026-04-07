@@ -8,11 +8,12 @@ import { env } from 'cloudflare:workers';
 interface Props {
   title?: string;
   description?: string;
+  ogImage?: string;
 }
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
-const { title = i.site.title, description = i.site.description } = Astro.props;
+const { title = i.site.title, description = i.site.description, ogImage } = Astro.props;
 
 let currentUser: { id: string; name?: string | null; email: string } | null = null;
 try {
@@ -51,13 +52,13 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content="https://surbias.com/logo.png" />
+    <meta name="twitter:image" content={ogImage || 'https://surbias.com/logo.png'} />
 
     <!-- Additional SEO -->
     <meta name="theme-color" content="#4a7c59" />
     <meta name="robots" content="index, follow" />
     <meta property="og:locale" content={locale} />
-    <meta property="og:image" content="https://surbias.com/logo.png" />
+    <meta property="og:image" content={ogImage || 'https://surbias.com/logo.png'} />
 
     <!-- hreflang -->
     <link rel="alternate" hreflang="en" href="https://surbias.com/" />
@@ -66,6 +67,14 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <link rel="alternate" hreflang="fr" href="https://surbias.com/fr/" />
     <link rel="alternate" hreflang="pt" href="https://surbias.com/pt/" />
     <link rel="alternate" hreflang="x-default" href="https://surbias.com/" />
+
+    <!-- RSS -->
+    <link rel="alternate" type="application/rss+xml" title="Surbias RSS" href="/feed.xml" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo.png" />
@@ -97,6 +106,101 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
       </div>
     </div>
     <div class="toast-container" id="toast-container"></div>
+    <script is:inline>
+      // Category follow toggle handler (delegated)
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.cat-follow-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var category = btn.dataset.followCategory;
+        if (!category) return;
+        fetch('/api/categories/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: category }),
+        })
+          .then(function(res) {
+            if (res.status === 401) {
+              window.showToast('Sign in to follow categories.', 'info');
+              return null;
+            }
+            return res.json();
+          })
+          .then(function(data) {
+            if (!data) return;
+            var following = data.following;
+            btn.classList.toggle('is-following', following);
+            var icon = btn.querySelector('svg');
+            if (icon) icon.setAttribute('fill', following ? 'currentColor' : 'none');
+            window.showToast(following ? 'Category followed!' : 'Unfollowed.', 'success');
+          })
+          .catch(function() {
+            window.showToast('Something went wrong.', 'error');
+          });
+      });
+
+      // Bookmark toggle handler (delegated)
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.bookmark-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var postId = btn.dataset.postId;
+        if (!postId) return;
+        fetch('/api/posts/' + postId + '/bookmark', { method: 'POST' })
+          .then(function(res) {
+            if (res.status === 401) {
+              window.showToast('Sign in to save stories.', 'info');
+              return null;
+            }
+            return res.json();
+          })
+          .then(function(data) {
+            if (!data) return;
+            var saved = data.bookmarked;
+            btn.classList.toggle('is-bookmarked', saved);
+            var icon = btn.querySelector('.bookmark-icon');
+            if (icon) icon.setAttribute('fill', saved ? 'currentColor' : 'none');
+            var label = btn.querySelector('.bookmark-label');
+            if (label) {
+              var lang = document.documentElement.lang || 'en';
+              var savedLabels = { en: 'Saved', es: 'Guardados', de: 'Gespeichert', fr: 'Sauvegardés', pt: 'Salvos' };
+              label.textContent = saved ? (savedLabels[lang] || 'Saved') : 'Save';
+            }
+            window.showToast(saved ? 'Story saved!' : 'Bookmark removed.', 'success');
+          })
+          .catch(function() {
+            window.showToast('Something went wrong.', 'error');
+          });
+      });
+    </script>
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(function() {});
+      }
+    </script>
+    <script is:inline>
+      // Dark mode toggle
+      (function() {
+        var theme = localStorage.getItem('theme') || 'light';
+        if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+        document.addEventListener('click', function(e) {
+          if (e.target && e.target.id === 'theme-toggle') {
+            var current = document.documentElement.getAttribute('data-theme');
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next === 'dark' ? 'dark' : '');
+            localStorage.setItem('theme', next);
+            e.target.textContent = next === 'dark' ? '☀️' : '🌙';
+          }
+        });
+
+        // Set initial icon
+        var btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      })();
+    </script>
     <script is:inline>
       window.showModal = function(opts) {
         const overlay = document.getElementById('global-modal');

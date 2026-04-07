@@ -45,5 +45,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
+  // Cache static pages at CDN edge
+  const url = new URL(context.request.url);
+  if (
+    context.request.method === 'GET' &&
+    !url.pathname.startsWith('/api/') &&
+    !url.pathname.startsWith('/admin/') &&
+    !url.pathname.startsWith('/profile')
+  ) {
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  }
+
   return response;
 });

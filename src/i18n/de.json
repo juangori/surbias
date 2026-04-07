@@ -11,7 +11,9 @@
     "login": "Anmelden",
     "logout": "Abmelden",
     "profile": "Meine Beiträge",
-    "admin": "Admin"
+    "admin": "Admin",
+    "search": "Suche",
+    "saved": "Gespeichert"
   },
   "categories": {
     "all": "Alle",
@@ -119,7 +121,24 @@
     "time_month": "Mo",
     "member_since": "Mitglied seit",
     "no_posts_yet": "Du hast noch keine Geschichten geteilt.",
-    "delete_account": "Konto löschen"
+    "delete_account": "Konto löschen",
+    "metoos": "ich auch",
+    "weekly_prompt": "Wochenfrage",
+    "search_placeholder": "Geschichten suchen...",
+    "search_results": "Ergebnisse für",
+    "no_results": "Keine Ergebnisse gefunden.",
+    "trending_tags": "Beliebte Tags",
+    "related_stories": "Ähnliche Geschichten",
+    "no_saved_yet": "Noch keine gespeicherten Geschichten.",
+    "weekly_digest": "Wöchentlicher Digest",
+    "digest_description": "Die besten Misserfolgsgeschichten jede Woche in deinem Postfach.",
+    "subscribe": "Abonnieren",
+    "subscribed": "Abonniert!",
+    "random_story": "Zufällige Geschichte",
+    "pinned": "Angepinnt",
+    "stories_this_month": "Geschichten diesen Monat",
+    "badges": "Abzeichen",
+    "failure_of_week": "Misserfolg der Woche"
   },
   "errors": {
     "title_too_short": "Titel ist zu kurz",

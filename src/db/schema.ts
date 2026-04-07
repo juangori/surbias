@@ -71,6 +71,7 @@ export const posts = sqliteTable('posts', {
   status: text('status').notNull().default('published'),
   flagCount: integer('flag_count').notNull().default(0),
   reactionCounts: text('reaction_counts').notNull().default('{}'),
+  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 });
@@ -128,5 +129,54 @@ export const auditLogs = sqliteTable('audit_logs', {
   targetType: text('target_type').notNull(),
   targetId: text('target_id').notNull(),
   details: text('details'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const bookmarks = sqliteTable('bookmarks', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  uniqueIndex('bookmark_unique').on(table.userId, table.postId),
+]);
+
+export const categoryFollows = sqliteTable('category_follows', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  category: text('category').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  uniqueIndex('category_follow_unique').on(table.userId, table.category),
+]);
+
+export const newsletterSubscribers = sqliteTable('newsletter_subscribers', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  locale: text('locale').notNull().default('en'),
+  subscribedAt: integer('subscribed_at', { mode: 'timestamp' }).notNull(),
+  unsubscribedAt: integer('unsubscribed_at', { mode: 'timestamp' }),
+});
+
+export const tags = sqliteTable('tags', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  count: integer('count').notNull().default(0),
+});
+
+export const postTags = sqliteTable('post_tags', {
+  id: text('id').primaryKey(),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+}, (table) => [
+  uniqueIndex('post_tag_unique').on(table.postId, table.tagId),
+]);
+
+export const notificationPrefs = sqliteTable('notification_prefs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  onReaction: integer('on_reaction', { mode: 'boolean' }).notNull().default(true),
+  onComment: integer('on_comment', { mode: 'boolean' }).notNull().default(true),
+  onWeeklyDigest: integer('on_weekly_digest', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

@@ -13,9 +13,10 @@ interface Props {
     reactionCounts: string;
     createdAt: Date | number;
   };
+  bookmarked?: boolean;
 }
 
-const { locale, post } = Astro.props;
+const { locale, post, bookmarked = false } = Astro.props;
 const i = t(locale);
 
 const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
@@ -45,7 +46,7 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
   <!-- Body preview -->
   <p class="post-body-preview">{bodyPreview}</p>
 
-  <!-- Footer: reactions + read more -->
+  <!-- Footer: reactions + bookmark + read more -->
   <div class="post-card-footer">
     <div class="reaction-bar">
       <span class="reaction-btn" title={i.reactions.metoo}>
@@ -69,8 +70,51 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
         <span class="reaction-count">{reactions.solidarity || 0}</span>
       </span>
     </div>
-    <a href={localePath(locale, `/post/${post.id}`)} class="read-more-link">
-      {i.post.read_more} &rarr;
-    </a>
+    <div class="post-card-actions">
+      <button
+        class:list={['bookmark-btn', { 'is-bookmarked': bookmarked }]}
+        data-post-id={post.id}
+        aria-label={bookmarked ? i.nav.saved : 'Save'}
+        title={bookmarked ? i.nav.saved : 'Save'}
+      >
+        <svg class="bookmark-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+        <span class="bookmark-label">{bookmarked ? i.nav.saved : 'Save'}</span>
+      </button>
+      <a href={localePath(locale, `/post/${post.id}`)} class="read-more-link">
+        {i.post.read_more} &rarr;
+      </a>
+    </div>
   </div>
 </article>
+
+<style>
+  .post-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .bookmark-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+
+  .bookmark-btn:hover {
+    color: var(--color-primary);
+  }
+
+  .bookmark-btn.is-bookmarked {
+    color: var(--color-primary);
+  }
+</style>

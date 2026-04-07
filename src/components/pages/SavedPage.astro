@@ -1,0 +1,148 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../PostCard.astro';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { createAuth } from '../../lib/auth';
+import { getDb } from '../../db';
+import { bookmarks, posts } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { Bookmark } from '@lucide/astro';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+
+// Auth check
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+
+if (!session?.user) {
+  return Astro.redirect(localePath(locale, '/login'));
+}
+
+const db = getDb(env.DB);
+
+const savedRows = await db
+  .select({
+    bookmarkId: bookmarks.id,
+    bookmarkCreatedAt: bookmarks.createdAt,
+    id: posts.id,
+    title: posts.title,
+    body: posts.body,
+    category: posts.category,
+    isAnonymous: posts.isAnonymous,
+    reactionCounts: posts.reactionCounts,
+    createdAt: posts.createdAt,
+    locale: posts.locale,
+    userId: posts.userId,
+    status: posts.status,
+    flagCount: posts.flagCount,
+    deletedAt: posts.deletedAt,
+  })
+  .from(bookmarks)
+  .innerJoin(posts, eq(bookmarks.postId, posts.id))
+  .where(eq(bookmarks.userId, session.user.id))
+  .orderBy(desc(bookmarks.createdAt));
+
+const savedLabel = i.nav.saved;
+---
+
+<Base title={savedLabel}>
+  <div class="saved-page">
+    <div class="saved-header">
+      <Bookmark size={22} aria-hidden="true" />
+      <h1>{savedLabel}</h1>
+      <span class="saved-count">{savedRows.length}</span>
+    </div>
+
+    {savedRows.length === 0 ? (
+      <div class="saved-empty">
+        <Bookmark size={36} aria-hidden="true" />
+        <p>{i.common.no_saved_yet}</p>
+        <a href={localePath(locale, '/')} class="btn-cta">{i.common.share_cta}</a>
+      </div>
+    ) : (
+      <div class="posts-grid">
+        {savedRows.map((row) => (
+          <PostCard locale={locale} post={row} bookmarked={true} />
+        ))}
+      </div>
+    )}
+  </div>
+</Base>
+
+<style>
+  .saved-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: var(--space-6) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .saved-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-primary);
+  }
+
+  .saved-header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .saved-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .saved-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-10, 3rem);
+    background: var(--color-surface-raised);
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  .posts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.15s;
+  }
+
+  .btn-cta:hover {
+    background: var(--color-primary-dark);
+  }
+</style>

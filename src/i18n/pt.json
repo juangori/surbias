@@ -11,7 +11,9 @@
     "login": "Entrar",
     "logout": "Sair",
     "profile": "Minhas publicações",
-    "admin": "Admin"
+    "admin": "Admin",
+    "search": "Buscar",
+    "saved": "Salvos"
   },
   "categories": {
     "all": "Todas",
@@ -119,7 +121,24 @@
     "time_month": "me",
     "member_since": "Membro desde",
     "no_posts_yet": "Você ainda não compartilhou nenhuma história.",
-    "delete_account": "Excluir conta"
+    "delete_account": "Excluir conta",
+    "metoos": "eu também",
+    "weekly_prompt": "Pergunta da semana",
+    "search_placeholder": "Buscar histórias...",
+    "search_results": "resultados para",
+    "no_results": "Nenhum resultado encontrado.",
+    "trending_tags": "Tags populares",
+    "related_stories": "Histórias relacionadas",
+    "no_saved_yet": "Nenhuma história salva ainda.",
+    "weekly_digest": "Digest Semanal",
+    "digest_description": "As melhores histórias de fracasso entregues toda semana.",
+    "subscribe": "Assinar",
+    "subscribed": "Inscrito!",
+    "random_story": "História aleatória",
+    "pinned": "Fixado",
+    "stories_this_month": "histórias este mês",
+    "badges": "Insígnias",
+    "failure_of_week": "Fracasso da semana"
   },
   "errors": {
     "title_too_short": "O título é muito curto",

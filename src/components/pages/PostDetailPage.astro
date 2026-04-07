@@ -2,11 +2,12 @@
 import Base from '../../layouts/Base.astro';
 import ReactionBar from '../../components/ReactionBar.astro';
 import CategoryFilter from '../../components/CategoryFilter.astro';
+import PostCard from '../../components/PostCard.astro';
 import { getLocaleFromUrl, t, timeAgo, localePath } from '../../i18n';
 import { getDb } from '../../db';
-import { posts } from '../../db/schema';
+import { posts, postTags, tags } from '../../db/schema';
 import { comments as commentsTable } from '../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { createAuth } from '../../lib/auth';
 
@@ -45,9 +46,43 @@ try {
 } catch (err) {
   console.error('Session check failed:', err);
 }
+
+// Simple markdown-to-HTML converter (HTML is escaped first, so this is XSS-safe)
+function simpleMarkdown(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br/>');
+}
+
+// Tags for this post
+const postTagRows = await db
+  .select({ name: tags.name })
+  .from(postTags)
+  .innerJoin(tags, eq(postTags.tagId, tags.id))
+  .where(eq(postTags.postId, postId));
+
+// Related posts (same category, same locale, excluding this post)
+const relatedPosts = await db
+  .select()
+  .from(posts)
+  .where(
+    and(
+      eq(posts.status, 'published'),
+      eq(posts.category, post.category),
+      eq(posts.locale, locale),
+      sql`${posts.id} != ${postId}`
+    )
+  )
+  .orderBy(desc(posts.createdAt))
+  .limit(3);
 ---
 
-<Base title={post.title} description={post.body.slice(0, 160) + '...'}>
+<Base title={post.title} description={post.body.slice(0, 160) + '...'} ogImage={`https://surbias.com/api/og/${post.id}`}>
   <!-- Back navigation -->
   <div style="margin-bottom: 1.5rem;">
     <a href={localePath(locale, '/')} class="back-nav">
@@ -83,7 +118,16 @@ try {
           <h1 class="post-detail-title">{post.title}</h1>
 
           <!-- Body -->
-          <div class="post-detail-body">{post.body}</div>
+          <div class="post-detail-body" set:html={simpleMarkdown(post.body)}></div>
+
+          <!-- Tags -->
+          {postTagRows.length > 0 && (
+            <div class="post-tags" style="margin-top: 1rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+              {postTagRows.map(t => (
+                <a href={localePath(locale, `/search?q=${t.name}`)} class="tag-pill">#{t.name}</a>
+              ))}
+            </div>
+          )}
 
           <!-- Reactions -->
           <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
@@ -92,7 +136,14 @@ try {
           <div class="share-buttons" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`https://surbias.com${localePath(locale, '/post/' + post.id)}`)}`} target="_blank" rel="noopener" class="share-btn">Share on X</a>
             <a href={`https://wa.me/?text=${encodeURIComponent(post.title + ' - https://surbias.com' + localePath(locale, '/post/' + post.id))}`} target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
+            <a href={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://surbias.com${localePath(locale, '/post/' + post.id)}`)}`} target="_blank" rel="noopener" class="share-btn">QR Code</a>
           </div>
+
+          <!-- Embed code -->
+          <details style="margin-top: 0.75rem;">
+            <summary style="cursor: pointer; font-size: 0.8rem; color: var(--surbias-text-muted);">Embed this story</summary>
+            <pre style="margin-top: 0.5rem; padding: 0.5rem; background: var(--surbias-warm-light); border-radius: var(--radius-md); font-size: 0.75rem; overflow-x: auto; white-space: pre-wrap;"><code>{`<iframe src="https://surbias.com/api/embed/${post.id}" width="100%" height="250" frameborder="0"></iframe>`}</code></pre>
+          </details>
 
           <!-- Comments section -->
           <div class="comments-section">
@@ -139,6 +190,16 @@ try {
               </button>
             )}
           </div>
+
+          <!-- Related posts -->
+          {relatedPosts.length > 0 && (
+            <div style="margin-top: 2rem;">
+              <h3>{i.common.related_stories}</h3>
+              <div class="posts-grid">
+                {relatedPosts.map(p => <PostCard locale={locale} post={p} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -215,6 +276,43 @@ try {
       }
     } catch (e) { console.error('Comment post failed:', e); window.showToast('Could not post comment.', 'error'); }
   });
+
+  // Poll for new comments every 30 seconds
+  setInterval(async function() {
+    try {
+      const res = await fetch('/api/posts/' + postId + '/comments');
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = document.getElementById('comments-list');
+      if (!list || !data.comments) return;
+      // Only update if count changed
+      if (data.comments.length !== list.children.length) {
+        list.innerHTML = '';
+        data.comments.forEach(function(c) {
+          const div = document.createElement('div');
+          div.className = 'comment-card';
+          const meta = document.createElement('div');
+          meta.className = 'comment-meta';
+          const author = document.createElement('span');
+          author.textContent = c.is_anonymous || c.isAnonymous ? anonymousLabel : (c.author_name || c.authorName || anonymousLabel);
+          meta.appendChild(author);
+          const sep = document.createElement('span');
+          sep.className = 'post-meta-sep';
+          sep.innerHTML = '&bull;';
+          meta.appendChild(sep);
+          const time = document.createElement('span');
+          time.textContent = justNowLabel;
+          meta.appendChild(time);
+          div.appendChild(meta);
+          const body = document.createElement('p');
+          body.className = 'comment-body';
+          body.textContent = c.body;
+          div.appendChild(body);
+          list.appendChild(div);
+        });
+      }
+    } catch(e) { console.error('Comment poll failed:', e); }
+  }, 30000);
 
   // Attach reportPost to report button
   document.querySelector('.report-btn')?.addEventListener('click', function() {

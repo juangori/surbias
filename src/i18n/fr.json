@@ -11,7 +11,9 @@
     "login": "Se connecter",
     "logout": "Se déconnecter",
     "profile": "Mes publications",
-    "admin": "Admin"
+    "admin": "Admin",
+    "search": "Rechercher",
+    "saved": "Sauvegardés"
   },
   "categories": {
     "all": "Toutes",
@@ -119,7 +121,24 @@
     "time_month": "mo",
     "member_since": "Membre depuis",
     "no_posts_yet": "Vous n'avez pas encore partagé d'histoires.",
-    "delete_account": "Supprimer le compte"
+    "delete_account": "Supprimer le compte",
+    "metoos": "moi aussi",
+    "weekly_prompt": "Question de la semaine",
+    "search_placeholder": "Rechercher des histoires...",
+    "search_results": "résultats pour",
+    "no_results": "Aucun résultat trouvé.",
+    "trending_tags": "Tags tendance",
+    "related_stories": "Histoires similaires",
+    "no_saved_yet": "Aucune histoire sauvegardée pour l'instant.",
+    "weekly_digest": "Digest hebdomadaire",
+    "digest_description": "Les meilleures histoires d'échec livrées chaque semaine.",
+    "subscribe": "S'abonner",
+    "subscribed": "Abonné!",
+    "random_story": "Histoire au hasard",
+    "pinned": "Épinglé",
+    "stories_this_month": "histoires ce mois",
+    "badges": "Badges",
+    "failure_of_week": "Échec de la semaine"
   },
   "errors": {
     "title_too_short": "Le titre est trop court",

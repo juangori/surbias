@@ -11,7 +11,9 @@
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
     "profile": "Mis publicaciones",
-    "admin": "Admin"
+    "admin": "Admin",
+    "search": "Buscar",
+    "saved": "Guardados"
   },
   "categories": {
     "all": "Todas",
@@ -119,7 +121,24 @@
     "time_month": "me",
     "member_since": "Miembro desde",
     "no_posts_yet": "Todavía no has compartido ninguna historia.",
-    "delete_account": "Eliminar cuenta"
+    "delete_account": "Eliminar cuenta",
+    "metoos": "yo también",
+    "weekly_prompt": "Pregunta de la semana",
+    "search_placeholder": "Buscar historias...",
+    "search_results": "resultados para",
+    "no_results": "No se encontraron resultados.",
+    "trending_tags": "Etiquetas populares",
+    "related_stories": "Historias relacionadas",
+    "no_saved_yet": "Todavía no guardaste ninguna historia.",
+    "weekly_digest": "Digest semanal",
+    "digest_description": "Las mejores historias de fracaso, entregadas cada semana.",
+    "subscribe": "Suscribirse",
+    "subscribed": "¡Suscripto!",
+    "random_story": "Historia al azar",
+    "pinned": "Fijado",
+    "stories_this_month": "historias este mes",
+    "badges": "Insignias",
+    "failure_of_week": "Fracaso de la semana"
   },
   "errors": {
     "title_too_short": "El título es muy corto",

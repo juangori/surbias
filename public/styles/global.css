@@ -1698,3 +1698,49 @@ h1, h2, h3, h4, h5, h6 {
   transition: background 0.15s;
 }
 .share-btn:hover { background: var(--surbias-warm-light); color: var(--surbias-text); }
+
+/* ============================================================
+   TAG PILLS
+   ============================================================ */
+.tag-pill {
+  padding: 0.2rem 0.6rem;
+  background: var(--surbias-warm-light);
+  color: var(--surbias-primary);
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+.tag-pill:hover { background: var(--surbias-warm-tint); }
+
+/* ============================================================
+   BADGE CARDS
+   ============================================================ */
+.badge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--surbias-warm-light);
+  border: 1px solid var(--surbias-border);
+  border-radius: var(--radius-md);
+  cursor: default;
+}
+
+/* ============================================================
+   DARK MODE (user-toggled via data-theme="dark" on <html>)
+   ============================================================ */
+[data-theme="dark"] {
+  --surbias-bg: #1a1a2e;
+  --surbias-card-bg: #222240;
+  --surbias-header-bg: #1a1a2e;
+  --surbias-text: #e8e8f0;
+  --surbias-text-muted: #9898b0;
+  --surbias-text-light: #686888;
+  --surbias-border: #333355;
+  --surbias-warm-light: #252540;
+  --surbias-warm-tint: #2a2a48;
+  --surbias-success-light: #1a2e1a;
+  --surbias-danger-light: #2e1a1a;
+}

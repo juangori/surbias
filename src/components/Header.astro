@@ -1,7 +1,7 @@
 ---
 import { t, localePath, type Locale } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import { Menu, X, House, Info, LogIn, User, FileText } from '@lucide/astro';
+import { Menu, X, House, Info, LogIn, User, FileText, Search, Bookmark } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
@@ -40,6 +40,11 @@ const i = t(locale);
             </a>
           </li>
           <li>
+            <a href={localePath(locale, '/saved')} class="nav-link nav-link--subtle">
+              <Bookmark size={15} aria-hidden="true" />{i.nav.saved}
+            </a>
+          </li>
+          <li>
             <button class="nav-link nav-link--subtle nav-logout-btn" data-logout aria-label={i.nav.logout}>
               <User size={15} aria-hidden="true" />{i.nav.logout}
             </button>
@@ -52,8 +57,18 @@ const i = t(locale);
           </a>
         </li>
       )}
+      <li>
+        <a href={localePath(locale, '/search')} class="nav-link">
+          <Search size={15} aria-hidden="true" />{i.nav.search}
+        </a>
+      </li>
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
+      </li>
+      <li>
+        <button class="nav-link nav-link--subtle" id="theme-toggle" aria-label="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-family:inherit;">
+          🌙
+        </button>
       </li>
       <li>
         <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="nav-coffee">☕ {i.common.footer_coffee}</a>
@@ -95,6 +110,11 @@ const i = t(locale);
             </a>
           </li>
           <li>
+            <a href={localePath(locale, '/saved')} class="nav-link">
+              <Bookmark size={15} aria-hidden="true" />{i.nav.saved}
+            </a>
+          </li>
+          <li>
             <button class="nav-link nav-logout-btn" data-logout aria-label={i.nav.logout}>
               <User size={15} aria-hidden="true" />{i.nav.logout}
             </button>
@@ -107,6 +127,11 @@ const i = t(locale);
           </a>
         </li>
       )}
+      <li>
+        <a href={localePath(locale, '/search')} class="nav-link">
+          <Search size={15} aria-hidden="true" />{i.nav.search}
+        </a>
+      </li>
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>

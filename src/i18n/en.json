@@ -11,7 +11,9 @@
     "login": "Sign in",
     "logout": "Sign out",
     "profile": "My Posts",
-    "admin": "Admin"
+    "admin": "Admin",
+    "search": "Search",
+    "saved": "Saved"
   },
   "categories": {
     "all": "All",
@@ -119,7 +121,24 @@
     "time_month": "mo",
     "member_since": "Member since",
     "no_posts_yet": "You haven't shared any stories yet.",
-    "delete_account": "Delete account"
+    "delete_account": "Delete account",
+    "metoos": "me too's",
+    "weekly_prompt": "This week's prompt",
+    "search_placeholder": "Search stories...",
+    "search_results": "results for",
+    "no_results": "No results found.",
+    "trending_tags": "Trending Tags",
+    "related_stories": "Related Stories",
+    "no_saved_yet": "No saved stories yet.",
+    "weekly_digest": "Weekly Digest",
+    "digest_description": "Get the best failure stories delivered weekly.",
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed!",
+    "random_story": "Random Story",
+    "pinned": "Pinned",
+    "stories_this_month": "stories this month",
+    "badges": "Badges",
+    "failure_of_week": "Failure of the Week"
   },
   "errors": {
     "title_too_short": "Title is too short",

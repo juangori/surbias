@@ -4,14 +4,34 @@ import PostCard from '../../components/PostCard.astro';
 import CategoryFilter from '../../components/CategoryFilter.astro';
 import PostForm from '../../components/PostForm.astro';
 import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { createAuth } from '../../lib/auth';
 import { getDb } from '../../db';
-import { posts } from '../../db/schema';
+import { posts, reactions, categoryFollows, tags } from '../../db/schema';
 import { desc, eq, and, sql } from 'drizzle-orm';
+import { getWeeklyPrompt } from '../../lib/prompts';
 import { env } from 'cloudflare:workers';
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
 const db = getDb(env.DB);
+
+// Auth check (optional — used for follow state)
+let currentUserId: string | null = null;
+try {
+  const auth = createAuth(env);
+  const session = await auth.api.getSession({ headers: Astro.request.headers });
+  if (session?.user) currentUserId = session.user.id;
+} catch (_) { /* ignore */ }
+
+// Fetch followed categories if logged in
+let followedCategorySet = new Set<string>();
+if (currentUserId) {
+  const follows = await db
+    .select({ category: categoryFollows.category })
+    .from(categoryFollows)
+    .where(eq(categoryFollows.userId, currentUserId));
+  followedCategorySet = new Set(follows.map((f) => f.category));
+}
 
 const url = Astro.url;
 const category = url.searchParams.get('category');
@@ -66,8 +86,50 @@ for (const row of catCountRows) {
   categoryCounts[row.category] = row.count;
 }
 
+const metooResult = await db.select({ count: sql<number>`count(*)` }).from(reactions).where(eq(reactions.type, 'metoo'));
+const totalMetoo = metooResult[0]?.count || 0;
+
+const weeklyPrompt = getWeeklyPrompt(locale);
+
+// Trending tags
+const trendingTags = await db.select().from(tags).orderBy(desc(tags.count)).limit(10);
+
+// Random story
+const randomPost = await db.select({ id: posts.id }).from(posts)
+  .where(eq(posts.status, 'published'))
+  .orderBy(sql`RANDOM()`)
+  .limit(1);
+const randomPostId = randomPost[0]?.id;
+
+// Pinned posts
+const pinnedPosts = await db.select().from(posts)
+  .where(and(eq(posts.status, 'published'), eq(posts.pinned, true), eq(posts.locale, locale)))
+  .orderBy(desc(posts.createdAt))
+  .limit(3);
+
 const turnstileSiteKey = env.TURNSTILE_SITE_KEY || '';
 const postError = url.searchParams.get('error') || undefined;
+
+// Failure of the Week: most-reacted post from last 7 days
+const sevenDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
+const fotwCandidates = await db.select().from(posts)
+  .where(and(
+    eq(posts.status, 'published'),
+    eq(posts.locale, locale),
+    sql`${posts.createdAt} >= ${sevenDaysAgo}`
+  ))
+  .orderBy(desc(posts.createdAt))
+  .limit(20);
+
+let failureOfWeek = fotwCandidates[0] || null;
+let maxReactions = 0;
+for (const p of fotwCandidates) {
+  const total = Object.values(JSON.parse(p.reactionCounts || '{}') as Record<string, number>).reduce((a, b) => a + b, 0);
+  if (total > maxReactions) {
+    maxReactions = total;
+    failureOfWeek = p;
+  }
+}
 ---
 
 <Base>
@@ -94,6 +156,8 @@ const postError = url.searchParams.get('error') || undefined;
           activeCategory={category || undefined}
           sidebar={true}
           counts={categoryCounts}
+          isLoggedIn={!!currentUserId}
+          followedCategories={followedCategorySet}
         />
       </div>
     </aside>
@@ -104,6 +168,17 @@ const postError = url.searchParams.get('error') || undefined;
       <div class="inline-form-section">
         <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
       </div>
+
+      {pinnedPosts.length > 0 && (
+        <div class="pinned-section" style="margin-bottom: 1.5rem;">
+          {pinnedPosts.map(p => (
+            <div style="position: relative;">
+              <span class="pinned-badge">📌 {i.common.pinned}</span>
+              <PostCard locale={locale} post={p} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div id="posts-container" aria-live="polite" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
         <div class="posts-grid">
@@ -144,7 +219,56 @@ const postError = url.searchParams.get('error') || undefined;
         <p class="sidebar-title">{i.common.stats}</p>
         <div class="sidebar-stats">
           <div class="stat-item"><span class="stat-number">{total}</span><span class="stat-label">{i.common.stories}</span></div>
+          <div class="stat-item"><span class="stat-number">{totalMetoo}</span><span class="stat-label">{i.common.metoos}</span></div>
         </div>
+      </div>
+      {trendingTags.length > 0 && (
+        <div class="sidebar-card" style="margin-top: 1rem;">
+          <p class="sidebar-title">{i.common.trending_tags}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+            {trendingTags.map(tag => (
+              <a href={localePath(locale, `/search?q=${tag.name}`)} class="tag-pill">#{tag.name}</a>
+            ))}
+          </div>
+        </div>
+      )}
+      {randomPostId && (
+        <div class="sidebar-card" style="margin-top: 1rem;">
+          <a href={localePath(locale, `/post/${randomPostId}`)} class="btn-cta" style="width:100%;text-align:center;display:block;font-size:0.85rem;">
+            🎲 {i.common.random_story}
+          </a>
+        </div>
+      )}
+      {failureOfWeek && maxReactions > 0 && (
+        <div class="sidebar-card" style="margin-top: 1rem;">
+          <p class="sidebar-title">🏅 {i.common.failure_of_week}</p>
+          <a href={localePath(locale, `/post/${failureOfWeek.id}`)} style="text-decoration:none;color:var(--surbias-text);">
+            <p style="font-weight:600;font-size:0.9rem;margin:0.5rem 0 0.25rem;">{failureOfWeek.title}</p>
+            <p style="font-size:0.8rem;color:var(--surbias-text-muted);margin:0;">{maxReactions} reactions</p>
+          </a>
+        </div>
+      )}
+      <div class="sidebar-card" style="margin-top: 1rem;">
+        <p class="sidebar-title">💡 {i.common.weekly_prompt}</p>
+        <p class="sidebar-about" style="font-style: italic;">"{weeklyPrompt}"</p>
+        <a href={localePath(locale, '/post/new')} class="btn-cta" style="width:100%;text-align:center;display:block;margin-top:0.75rem;font-size:0.85rem;">{i.common.share_cta}</a>
+      </div>
+      <div class="sidebar-card" style="margin-top: 1rem;">
+        <p class="sidebar-title">{i.common.weekly_digest}</p>
+        <p class="sidebar-about">{i.common.digest_description}</p>
+        <form id="newsletter-form" data-locale={locale}>
+          <input
+            type="email"
+            id="newsletter-email"
+            placeholder="your@email.com"
+            required
+            class="newsletter-input"
+            autocomplete="email"
+          />
+          <button type="submit" class="btn-cta newsletter-submit">
+            {i.common.subscribe}
+          </button>
+        </form>
       </div>
     </aside>
   </div>
@@ -377,3 +501,88 @@ const postError = url.searchParams.get('error') || undefined;
     });
   })();
 </script>
+
+<script>
+  (() => {
+    const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('newsletter-email') as HTMLInputElement | null;
+      const email = emailInput?.value?.trim();
+      if (!email) return;
+
+      const locale = (form.dataset.locale as string) || 'en';
+      const submitBtn = form.querySelector('.newsletter-submit') as HTMLButtonElement | null;
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, locale }),
+        });
+        const data = await res.json() as { subscribed?: boolean; error?: string };
+        if (data.subscribed) {
+          const lang = document.documentElement.lang || 'en';
+          const labels: Record<string, string> = {
+            en: 'Subscribed!',
+            es: '¡Suscripto!',
+            de: 'Abonniert!',
+            fr: 'Abonné!',
+            pt: 'Inscrito!',
+          };
+          window.showToast(labels[lang] || 'Subscribed!', 'success');
+          form.reset();
+        } else {
+          window.showToast(data.error || 'Something went wrong.', 'error');
+        }
+      } catch (_) {
+        window.showToast('Something went wrong.', 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .pinned-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: var(--surbias-warm-light);
+    color: var(--surbias-warm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-pill);
+    z-index: 3;
+  }
+
+  .newsletter-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .newsletter-input:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .newsletter-submit {
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    justify-content: center;
+  }
+</style>

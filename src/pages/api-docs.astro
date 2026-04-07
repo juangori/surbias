@@ -1,0 +1,45 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="API Documentation">
+  <div class="legal-page">
+    <h1>Public API</h1>
+    <p style="color: var(--surbias-text-muted); margin-bottom: 2rem;">Access Surbias stories programmatically. Free, no auth required for read endpoints.</p>
+
+    <h2>Base URL</h2>
+    <pre style="padding: 0.75rem; background: var(--surbias-warm-light); border-radius: var(--radius-md); font-size: 0.85rem;">https://surbias.com/api</pre>
+
+    <h2>Endpoints</h2>
+
+    <h3>GET /api/posts</h3>
+    <p>List published posts.</p>
+    <p><strong>Query parameters:</strong></p>
+    <ul>
+      <li><code>page</code> (number) — Page number, default 1</li>
+      <li><code>category</code> (string) — Filter by category: career, business, education, relationships, health, financial, other</li>
+      <li><code>locale</code> (string) — Filter by language: en, es, de, fr, pt</li>
+      <li><code>sort</code> (string) — Sort by: recent (default), hot, popular</li>
+      <li><code>q</code> (string) — Search query (min 2 chars)</li>
+    </ul>
+    <p><strong>Response:</strong></p>
+    <pre style="padding: 0.75rem; background: var(--surbias-warm-light); border-radius: var(--radius-md); font-size: 0.85rem; overflow-x: auto;">{'{ "posts": [...], "page": 1, "totalPages": 5, "total": 100 }'}</pre>
+
+    <h3>GET /api/posts/[id]/comments</h3>
+    <p>Get comments for a specific post.</p>
+
+    <h3>GET /feed.xml</h3>
+    <p>RSS 2.0 feed. Optional <code>?locale=</code> parameter.</p>
+
+    <h3>GET /api/og/[id]</h3>
+    <p>Auto-generated Open Graph image (SVG) for a post.</p>
+
+    <h3>GET /api/embed/[id]</h3>
+    <p>Embeddable HTML widget for a post. Use in an iframe.</p>
+
+    <h2>Rate Limits</h2>
+    <p>Public endpoints are rate-limited. Please be reasonable — max ~60 requests/minute.</p>
+
+    <h2>Terms</h2>
+    <p>By using the API you agree to our <a href="/terms">Terms of Service</a>. Attribution appreciated but not required.</p>
+  </div>
+</Base>

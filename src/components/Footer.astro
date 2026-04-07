@@ -19,6 +19,10 @@ const i = t(locale);
       <a href={localePath(locale, '/about')}>{i.nav.about}</a>
       <span class="footer-sep" aria-hidden="true">|</span>
       <a href={localePath(locale, '/post/new')}>{i.nav.share}</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/feed.xml">RSS</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/stats">Stats</a>
     </nav>
 
     <!-- Column 2: Brand (center) -->
@@ -43,6 +47,8 @@ const i = t(locale);
       </a>
       <a href={localePath(locale, '/terms')} class="footer-legal-link">{i.common.terms}</a>
       <a href={localePath(locale, '/privacy')} class="footer-legal-link">{i.common.privacy}</a>
+      <a href="/api-docs" class="footer-legal-link">API</a>
+      <a href="/enterprise" class="footer-legal-link">Enterprise</a>
     </div>
 
   </div>

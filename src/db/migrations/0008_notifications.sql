@@ -1,0 +1,8 @@
+CREATE TABLE notification_prefs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  on_reaction INTEGER NOT NULL DEFAULT 1,
+  on_comment INTEGER NOT NULL DEFAULT 1,
+  on_weekly_digest INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL
+);

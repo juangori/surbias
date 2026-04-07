@@ -4,10 +4,11 @@ import PostCard from '../PostCard.astro';
 import { getLocaleFromUrl, t, localePath } from '../../i18n';
 import { createAuth } from '../../lib/auth';
 import { getDb } from '../../db';
-import { posts } from '../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { posts, reactions, comments } from '../../db/schema';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { User, FileText, Trash2 } from '@lucide/astro';
+import { BADGES, computeBadges } from '../../lib/badges';
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
@@ -32,6 +33,37 @@ const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
   year: 'numeric',
   month: 'long',
 });
+
+// Count posts this month
+const now = new Date();
+const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+const monthStart = Math.floor(firstOfMonth.getTime() / 1000);
+
+const monthPosts = await db.select({ count: sql<number>`count(*)` }).from(posts)
+  .where(and(
+    eq(posts.userId, session.user.id),
+    eq(posts.status, 'published'),
+    sql`${posts.createdAt} >= ${monthStart}`
+  ));
+const postsThisMonth = monthPosts[0]?.count || 0;
+
+// Reactions received on user's posts
+const reactionsReceived = await db.select({ count: sql<number>`count(*)` }).from(reactions)
+  .innerJoin(posts, eq(reactions.postId, posts.id))
+  .where(eq(posts.userId, session.user.id));
+const totalReactions = reactionsReceived[0]?.count || 0;
+
+// Comments left by user
+const commentCount = await db.select({ count: sql<number>`count(*)` }).from(comments)
+  .where(eq(comments.userId, session.user.id));
+const totalComments = commentCount[0]?.count || 0;
+
+const earnedBadgeIds = computeBadges({
+  postCount: userPosts.length,
+  totalReactionsReceived: totalReactions,
+  commentCount: totalComments,
+});
+const earnedBadges = BADGES.filter(b => earnedBadgeIds.includes(b.id));
 ---
 
 <Base title={i.nav.profile}>
@@ -47,8 +79,26 @@ const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
         <p class="profile-since">
           {i.common.member_since}: <strong>{memberSinceFormatted}</strong>
         </p>
+        <div class="stat-item" style="margin-top: 0.75rem;">
+          <span class="stat-number">{postsThisMonth}</span>
+          <span class="stat-label">{i.common.stories_this_month}</span>
+        </div>
       </div>
     </div>
+
+    {earnedBadges.length > 0 && (
+      <div style="margin-top: 1.5rem;">
+        <h3>{i.common.badges}</h3>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem;">
+          {earnedBadges.map(badge => (
+            <div class="badge-card" title={badge.description[locale] || badge.description.en}>
+              <span style="font-size: 1.5rem;">{badge.icon}</span>
+              <span style="font-size: 0.8rem; font-weight: 500;">{badge.name[locale] || badge.name.en}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     <!-- My Posts section -->
     <section class="profile-posts-section">
@@ -73,6 +123,17 @@ const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
         </div>
       )}
     </section>
+
+    <!-- Notification Preferences -->
+    <div style="margin-top: 1.5rem;">
+      <h3>Notification Preferences</h3>
+      <p style="color: var(--surbias-text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Email notifications coming soon. Configure your preferences here.</p>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <label class="anonymous-toggle"><input type="checkbox" checked disabled class="toggle-checkbox" /><span class="toggle-label">When someone reacts to my post</span></label>
+        <label class="anonymous-toggle"><input type="checkbox" checked disabled class="toggle-checkbox" /><span class="toggle-label">When someone comments on my post</span></label>
+        <label class="anonymous-toggle"><input type="checkbox" checked disabled class="toggle-checkbox" /><span class="toggle-label">Weekly digest email</span></label>
+      </div>
+    </div>
 
     <!-- Danger zone -->
     <section class="danger-zone">
