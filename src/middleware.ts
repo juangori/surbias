@@ -2,9 +2,10 @@ import { defineMiddleware } from 'astro:middleware';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   // CSRF: validate Origin/Referer BEFORE processing the request
+  // Excludes /api/auth/* — better-auth handles its own CSRF internally
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(context.request.method)) {
     const url = new URL(context.request.url);
-    if (url.pathname.startsWith('/api/')) {
+    if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/')) {
       const origin = context.request.headers.get('origin');
       const referer = context.request.headers.get('referer');
       const host = url.host;
