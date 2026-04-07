@@ -45,13 +45,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Cache static pages at CDN edge
-  const url = new URL(context.request.url);
+  // Cache static pages at CDN edge — exclude pages that depend on session state
+  const url2 = new URL(context.request.url);
+  const hasSession = context.request.headers.get('cookie')?.includes('better-auth');
   if (
     context.request.method === 'GET' &&
-    !url.pathname.startsWith('/api/') &&
-    !url.pathname.startsWith('/admin/') &&
-    !url.pathname.startsWith('/profile')
+    !hasSession &&
+    !url2.pathname.startsWith('/api/') &&
+    !url2.pathname.startsWith('/admin/') &&
+    !url2.pathname.startsWith('/profile') &&
+    !url2.pathname.startsWith('/login') &&
+    !url2.pathname.startsWith('/saved')
   ) {
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
   }
