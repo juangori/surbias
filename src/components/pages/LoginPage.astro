@@ -95,12 +95,21 @@ const i = t(locale);
     const email = (document.getElementById('email') as HTMLInputElement).value;
     const password = (document.getElementById('password') as HTMLInputElement).value;
 
-    const { error } = isLogin
-      ? await authClient.signIn.email({ email, password })
-      : await authClient.signUp.email({ email, password, name: email.split('@')[0] });
+    let result;
+    try {
+      result = isLogin
+        ? await authClient.signIn.email({ email, password })
+        : await authClient.signUp.email({ email, password, name: email.split('@')[0] });
+    } catch (err) {
+      console.error('[auth] request threw:', err);
+      window.showToast('Network error: ' + (err as Error).message, 'error');
+      return;
+    }
 
-    if (error) {
-      window.showToast(error.message || 'Something went wrong', 'error');
+    console.log('[auth] result:', JSON.stringify(result));
+
+    if (result?.error) {
+      window.showToast(result.error.message || 'Something went wrong', 'error');
       return;
     }
     window.location.href = '/';
