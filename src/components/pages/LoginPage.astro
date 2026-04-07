@@ -94,16 +94,16 @@ const i = t(locale);
     e.preventDefault();
     const email = (document.getElementById('email') as HTMLInputElement).value;
     const password = (document.getElementById('password') as HTMLInputElement).value;
-    try {
-      if (isLogin) {
-        await authClient.signIn.email({ email, password });
-      } else {
-        await authClient.signUp.email({ email, password, name: email.split('@')[0] });
-      }
-      window.location.href = '/';
-    } catch (err) {
-      window.showToast('Error: ' + (err as Error).message, 'error');
+
+    const { error } = isLogin
+      ? await authClient.signIn.email({ email, password })
+      : await authClient.signUp.email({ email, password, name: email.split('@')[0] });
+
+    if (error) {
+      window.showToast(error.message || 'Something went wrong', 'error');
+      return;
     }
+    window.location.href = '/';
   });
 
   googleBtn?.addEventListener('click', async () => {
