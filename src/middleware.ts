@@ -1,6 +1,27 @@
 import { defineMiddleware } from 'astro:middleware';
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // CSRF: validate Origin/Referer BEFORE processing the request
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(context.request.method)) {
+    const url = new URL(context.request.url);
+    if (url.pathname.startsWith('/api/')) {
+      const origin = context.request.headers.get('origin');
+      const referer = context.request.headers.get('referer');
+      const host = url.host;
+
+      const originHost = origin ? new URL(origin).host : null;
+      const refererHost = referer ? new URL(referer).host : null;
+      const validHost = originHost === host || refererHost === host;
+
+      if (!validHost) {
+        return new Response(JSON.stringify({ error: 'CSRF check failed' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+  }
+
   const response = await next();
 
   // Content Security Policy
@@ -18,28 +39,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
       "base-uri 'self'",
     ].join('; ')
   );
-
-  // CSRF: validate Origin/Referer on state-changing requests
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(context.request.method)) {
-    const url = new URL(context.request.url);
-    // Only enforce on API routes
-    if (url.pathname.startsWith('/api/')) {
-      const origin = context.request.headers.get('origin');
-      const referer = context.request.headers.get('referer');
-      const host = url.host;
-
-      const originHost = origin ? new URL(origin).host : null;
-      const refererHost = referer ? new URL(referer).host : null;
-
-      const validHost = originHost === host || refererHost === host;
-      if (!validHost) {
-        return new Response(JSON.stringify({ error: 'CSRF check failed' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    }
-  }
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');

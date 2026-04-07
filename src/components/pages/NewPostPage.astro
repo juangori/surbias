@@ -1,13 +1,21 @@
 ---
 import Base from '../../layouts/Base.astro';
 import PostForm from '../../components/PostForm.astro';
-import { getLocaleFromUrl, t } from '../../i18n';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { createAuth } from '../../lib/auth';
 import { env } from 'cloudflare:workers';
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
 const error = Astro.url.searchParams.get('error') || undefined;
 const turnstileSiteKey = env.TURNSTILE_SITE_KEY || '';
+
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+
+if (!session) {
+  return Astro.redirect(localePath(locale, '/login'));
+}
 ---
 
 <Base title={i.post.share_title}>

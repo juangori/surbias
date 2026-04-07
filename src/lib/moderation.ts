@@ -15,7 +15,7 @@ const BLOCKED_PATTERNS = [
   /\bwork\s+from\s+home\b/i,
 ];
 
-const MAX_URLS = 3;
+const MAX_URLS = 0; // No URLs allowed in posts — primary anti-spam measure
 const MIN_BODY_LENGTH = 20;
 const MIN_TITLE_LENGTH = 3;
 const MAX_TITLE_LENGTH = 150;

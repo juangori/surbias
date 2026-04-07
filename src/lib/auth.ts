@@ -18,10 +18,10 @@ export function createAuth(env: CloudflareEnv) {
     },
     emailVerification: {
       sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
-        // Placeholder: log the verification URL. In production, integrate with an email service.
         console.log(`[EMAIL VERIFY] User: ${user.email}, URL: ${url}`);
       },
-      sendOnSignUp: true,
+      sendOnSignUp: false,
+      requireEmailVerification: false,
     },
     socialProviders: {
       google: {
