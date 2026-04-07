@@ -63,7 +63,7 @@ const isFlagged = post.status === 'flagged';
           <div class="post-meta" style="margin-bottom: 1.25rem;">
             <span class="category-badge">{categoryLabel}</span>
             <span class="post-meta-sep">&bull;</span>
-            <span>{post.isAnonymous ? '---' : i.common.anonymous}</span>
+            <span>{post.isAnonymous ? '---' : (post.userName || '---')}</span>
             <span class="post-meta-sep">&bull;</span>
             <span>{timeAgo(createdAt, locale)}</span>
           </div>
@@ -123,28 +123,28 @@ const isFlagged = post.status === 'flagged';
   </div>
 </Base>
 
-<script is:inline define:vars={{ postId, i18n: { report_prompt: i.moderation.report_prompt, report_invalid: i.moderation.report_invalid, report_success: i.moderation.report_success, report_duplicate: i.moderation.report_duplicate, just_now: i.time.just_now, anonymous: i.common.anonymous } }}>
+<script is:inline define:vars={{ postId, anonymousLabel: i.common.anonymous, justNowLabel: `< 1 ${i.common.time_min}`, i18n: { report_success: i.moderation.report_success, report_duplicate: i.moderation.report_duplicate, report_reason: i.moderation.report_reason, spam: i.moderation.spam, offensive: i.moderation.offensive, harmful: i.moderation.harmful, other: i.moderation.other } }}>
   async function reportPost(id) {
-    const reason = prompt(i18n.report_prompt);
-    if (!reason) return;
-    const validReasons = ['spam', 'offensive', 'harmful', 'other'];
-    const cleanReason = reason.toLowerCase().trim();
-    if (!validReasons.includes(cleanReason)) {
-      alert(i18n.report_invalid);
-      return;
-    }
-    try {
-      const res = await fetch('/api/posts/' + id + '/flag', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: cleanReason }),
-      });
-      if (res.ok) {
-        alert(i18n.report_success);
-      } else if (res.status === 409) {
-        alert(i18n.report_duplicate);
-      }
-    } catch {}
+    window.showModal({
+      title: i18n.report_reason,
+      html: '<select class="modal-select" id="report-reason"><option value="spam">' + i18n.spam + '</option><option value="offensive">' + i18n.offensive + '</option><option value="harmful">' + i18n.harmful + '</option><option value="other">' + i18n.other + '</option></select>',
+      buttons: [
+        { text: 'Cancel', class: '' },
+        { text: 'Report', class: 'modal-btn-danger', onClick: async function() {
+          var reason = document.getElementById('report-reason').value;
+          try {
+            var res = await fetch('/api/posts/' + id + '/flag', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: reason }),
+            });
+            if (res.ok) window.showToast(i18n.report_success, 'success');
+            else if (res.status === 409) window.showToast(i18n.report_duplicate, 'info');
+            else window.showToast('Something went wrong.', 'error');
+          } catch(e) { window.showToast('Something went wrong.', 'error'); }
+        }}
+      ]
+    });
   }
 
   document.getElementById('submit-comment')?.addEventListener('click', async function() {
@@ -169,7 +169,7 @@ const isFlagged = post.status === 'flagged';
         meta.className = 'comment-meta';
 
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = i18n.anonymous;
+        nameSpan.textContent = anonymousLabel;
 
         const sep = document.createElement('span');
         sep.className = 'post-meta-sep';
@@ -177,7 +177,7 @@ const isFlagged = post.status === 'flagged';
         sep.textContent = '•';
 
         const timeSpan = document.createElement('span');
-        timeSpan.textContent = i18n.just_now;
+        timeSpan.textContent = justNowLabel;
 
         meta.append(nameSpan, sep, timeSpan);
 
@@ -187,8 +187,11 @@ const isFlagged = post.status === 'flagged';
 
         div.append(meta, bodyP);
         list.prepend(div);
+        window.showToast('Comment added!', 'success');
+      } else {
+        window.showToast('Could not post comment.', 'error');
       }
-    } catch {}
+    } catch { window.showToast('Could not post comment.', 'error'); }
   });
 
   // Attach reportPost to report button

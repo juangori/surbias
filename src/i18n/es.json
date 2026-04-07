@@ -10,6 +10,7 @@
     "share": "Compartí tu historia",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
+    "profile": "Mis publicaciones",
     "admin": "Admin"
   },
   "categories": {
@@ -106,8 +107,16 @@
     "comments": "Comentarios",
     "write_comment": "Escribí un comentario...",
     "anonymous": "Anónimo",
-    "terms": "Términos de Servicio",
-    "privacy": "Política de Privacidad"
+    "terms": "Términos del servicio",
+    "privacy": "Política de privacidad",
+    "time_now": "ahora",
+    "time_min": "min",
+    "time_hour": "h",
+    "time_day": "d",
+    "time_month": "me",
+    "member_since": "Miembro desde",
+    "no_posts_yet": "Todavía no has compartido ninguna historia.",
+    "delete_account": "Eliminar cuenta"
   },
   "errors": {
     "title_too_short": "El título es muy corto",

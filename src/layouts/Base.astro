@@ -2,6 +2,8 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { getLocaleFromUrl, t } from '../i18n';
+import { createAuth } from '../lib/auth';
+import { env } from 'cloudflare:workers';
 
 interface Props {
   title?: string;
@@ -11,6 +13,15 @@ interface Props {
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
 const { title = i.site.title, description = i.site.description } = Astro.props;
+
+let currentUser: { id: string; name?: string | null; email: string } | null = null;
+try {
+  const auth = createAuth(env);
+  const session = await auth.api.getSession({ headers: Astro.request.headers });
+  if (session?.user) {
+    currentUser = { id: session.user.id, name: session.user.name, email: session.user.email };
+  }
+} catch {}
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://surbias.com');
 const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline}` : `${title} | Surbias`;
@@ -54,10 +65,54 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <link rel="stylesheet" href="/styles/global.css" />
   </head>
   <body>
-    <Header locale={locale} />
+    <Header locale={locale} user={currentUser} />
     <main class="container">
       <slot />
     </main>
     <Footer locale={locale} />
+    <!-- Global modal + toast -->
+    <div class="modal-overlay" id="global-modal">
+      <div class="modal-box">
+        <p class="modal-title" id="modal-title"></p>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-actions" id="modal-actions"></div>
+      </div>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <script is:inline>
+      window.showModal = function(opts) {
+        const overlay = document.getElementById('global-modal');
+        document.getElementById('modal-title').textContent = opts.title || '';
+        const body = document.getElementById('modal-body');
+        body.innerHTML = opts.html || '';
+        const actions = document.getElementById('modal-actions');
+        actions.innerHTML = '';
+        if (opts.buttons) {
+          opts.buttons.forEach(function(b) {
+            const btn = document.createElement('button');
+            btn.className = 'modal-btn ' + (b.class || '');
+            btn.textContent = b.text;
+            btn.addEventListener('click', function() {
+              overlay.classList.remove('is-open');
+              if (b.onClick) b.onClick();
+            });
+            actions.appendChild(btn);
+          });
+        }
+        overlay.classList.add('is-open');
+        overlay.addEventListener('click', function(e) {
+          if (e.target === overlay) overlay.classList.remove('is-open');
+        });
+      };
+      window.showToast = function(message, type) {
+        type = type || 'info';
+        var container = document.getElementById('toast-container');
+        var toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 4000);
+      };
+    </script>
   </body>
 </html>

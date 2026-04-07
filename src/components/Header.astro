@@ -1,13 +1,14 @@
 ---
 import { t, localePath, type Locale } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import { Menu, X, House, Info, LogIn } from '@lucide/astro';
+import { Menu, X, House, Info, LogIn, User, FileText } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
+  user?: { id: string; name?: string | null; email: string } | null;
 }
 
-const { locale } = Astro.props;
+const { locale, user } = Astro.props;
 const i = t(locale);
 ---
 
@@ -31,11 +32,26 @@ const i = t(locale);
           <Info size={15} aria-hidden="true" />{i.nav.about}
         </a>
       </li>
-      <li>
-        <a href={localePath(locale, '/login')} class="nav-link nav-link--subtle">
-          <LogIn size={15} aria-hidden="true" />{i.nav.login}
-        </a>
-      </li>
+      {user ? (
+        <>
+          <li>
+            <a href={localePath(locale, '/profile')} class="nav-link nav-link--subtle">
+              <FileText size={15} aria-hidden="true" />{i.nav.profile}
+            </a>
+          </li>
+          <li>
+            <button class="nav-link nav-link--subtle nav-logout-btn" data-logout aria-label={i.nav.logout}>
+              <User size={15} aria-hidden="true" />{i.nav.logout}
+            </button>
+          </li>
+        </>
+      ) : (
+        <li>
+          <a href={localePath(locale, '/login')} class="nav-link nav-link--subtle">
+            <LogIn size={15} aria-hidden="true" />{i.nav.login}
+          </a>
+        </li>
+      )}
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>
@@ -71,11 +87,26 @@ const i = t(locale);
           <Info size={15} aria-hidden="true" />{i.nav.about}
         </a>
       </li>
-      <li>
-        <a href={localePath(locale, '/login')} class="nav-link">
-          <LogIn size={15} aria-hidden="true" />{i.nav.login}
-        </a>
-      </li>
+      {user ? (
+        <>
+          <li>
+            <a href={localePath(locale, '/profile')} class="nav-link">
+              <FileText size={15} aria-hidden="true" />{i.nav.profile}
+            </a>
+          </li>
+          <li>
+            <button class="nav-link nav-logout-btn" data-logout aria-label={i.nav.logout}>
+              <User size={15} aria-hidden="true" />{i.nav.logout}
+            </button>
+          </li>
+        </>
+      ) : (
+        <li>
+          <a href={localePath(locale, '/login')} class="nav-link">
+            <LogIn size={15} aria-hidden="true" />{i.nav.login}
+          </a>
+        </li>
+      )}
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>
@@ -85,6 +116,20 @@ const i = t(locale);
     </ul>
   </div>
 </header>
+
+<script>
+  document.querySelectorAll('[data-logout]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await fetch('/api/auth/sign-out', { method: 'POST' });
+        window.location.href = '/';
+      } catch {
+        window.location.href = '/';
+      }
+    });
+  });
+</script>
 
 <script>
   const toggle = document.querySelector('.mobile-nav-toggle') as HTMLButtonElement | null;
@@ -116,8 +161,8 @@ const i = t(locale);
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
+    background-color: var(--surbias-header-bg);
+    border-bottom: 1px solid var(--surbias-border);
   }
 
   .site-nav {
@@ -127,7 +172,7 @@ const i = t(locale);
     max-width: 100%;
     padding: 0 2.5rem;
     height: 60px;
-    gap: var(--space-4);
+    gap: 1rem;
   }
 
   /* Logo */
@@ -147,7 +192,7 @@ const i = t(locale);
   .logo-text {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--color-text-primary);
+    color: var(--surbias-text);
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
@@ -156,7 +201,7 @@ const i = t(locale);
   .nav-links {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: 0.25rem;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -169,20 +214,30 @@ const i = t(locale);
     padding: 6px 12px;
     font-size: 0.9rem;
     font-weight: 500;
-    color: var(--color-text-secondary);
+    color: var(--surbias-text-muted);
     text-decoration: none;
     border-radius: 6px;
     transition: color 0.15s, background-color 0.15s;
   }
 
   .nav-link:hover {
-    color: var(--color-text-primary);
-    background-color: var(--color-surface-raised);
+    color: var(--surbias-text);
+    background-color: var(--surbias-warm-light);
   }
 
   .nav-link--subtle {
-    color: var(--color-text-muted);
+    color: var(--surbias-text-light);
     font-size: 0.85rem;
+  }
+
+  /* Logout button styled as a nav link */
+  .nav-logout-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
   }
 
   /* CTA button */
@@ -191,7 +246,7 @@ const i = t(locale);
     align-items: center;
     gap: 5px;
     padding: 8px 16px;
-    background: var(--color-primary);
+    background: var(--surbias-primary);
     color: #fff !important;
     font-size: 0.875rem;
     font-weight: 600;
@@ -202,7 +257,7 @@ const i = t(locale);
   }
 
   .btn-cta:hover {
-    background: var(--color-primary-dark);
+    background: var(--surbias-primary-hover);
     transform: translateY(-1px);
   }
 
@@ -241,7 +296,7 @@ const i = t(locale);
   .mobile-controls {
     display: none;
     align-items: center;
-    gap: var(--space-2);
+    gap: 0.5rem;
   }
 
   /* Hamburger button */
@@ -252,12 +307,12 @@ const i = t(locale);
     width: 36px;
     height: 36px;
     background: none;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--surbias-border);
     border-radius: 6px;
     cursor: pointer;
     padding: 0;
     flex-shrink: 0;
-    color: var(--color-text-secondary);
+    color: var(--surbias-text-muted);
   }
 
   .mobile-nav-toggle .icon-close {
@@ -275,8 +330,8 @@ const i = t(locale);
   /* Mobile dropdown menu */
   .mobile-menu {
     display: none;
-    border-top: 1px solid var(--color-border);
-    background-color: var(--color-surface);
+    border-top: 1px solid var(--surbias-border);
+    background-color: var(--surbias-header-bg);
   }
 
   .mobile-menu.is-open {
@@ -286,7 +341,7 @@ const i = t(locale);
   .mobile-menu ul {
     list-style: none;
     margin: 0;
-    padding: var(--space-2) var(--space-4);
+    padding: 0.5rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 2px;

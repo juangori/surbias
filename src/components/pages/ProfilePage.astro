@@ -1,0 +1,261 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../PostCard.astro';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { createAuth } from '../../lib/auth';
+import { getDb } from '../../db';
+import { posts } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { User, FileText, Trash2 } from '@lucide/astro';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+
+// Auth check
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+
+if (!session?.user) {
+  return Astro.redirect(localePath(locale, '/login'));
+}
+
+const db = getDb(env.DB);
+const userPosts = await db
+  .select()
+  .from(posts)
+  .where(eq(posts.userId, session.user.id))
+  .orderBy(desc(posts.createdAt));
+
+const memberSince = new Date(session.user.createdAt ?? Date.now());
+const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
+  year: 'numeric',
+  month: 'long',
+});
+---
+
+<Base title={i.nav.profile}>
+  <div class="profile-page">
+    <!-- User info card -->
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <User size={36} aria-hidden="true" />
+      </div>
+      <div class="profile-info">
+        <h1 class="profile-name">{session.user.name || session.user.email}</h1>
+        <p class="profile-email">{session.user.email}</p>
+        <p class="profile-since">
+          {i.common.member_since}: <strong>{memberSinceFormatted}</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- My Posts section -->
+    <section class="profile-posts-section">
+      <div class="profile-posts-header">
+        <FileText size={18} aria-hidden="true" />
+        <h2>{i.nav.profile}</h2>
+        <span class="posts-count">{userPosts.length}</span>
+      </div>
+
+      {userPosts.length === 0 ? (
+        <div class="profile-empty">
+          <p>{i.common.no_posts_yet}</p>
+          <a href={localePath(locale, '/new')} class="btn-cta">
+            {i.common.share_cta}
+          </a>
+        </div>
+      ) : (
+        <div class="posts-grid">
+          {userPosts.map((post) => (
+            <PostCard locale={locale} post={post} />
+          ))}
+        </div>
+      )}
+    </section>
+
+    <!-- Danger zone -->
+    <section class="danger-zone">
+      <h3>{i.common.delete_account}</h3>
+      <button class="btn-delete-account" disabled title="Coming soon">
+        <Trash2 size={15} aria-hidden="true" />
+        {i.common.delete_account}
+      </button>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .profile-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: var(--space-6) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  /* Profile card */
+  .profile-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: var(--space-5) var(--space-6);
+  }
+
+  .profile-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--color-primary-light, #e8f4ff);
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .profile-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .profile-email {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .profile-since {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  /* Posts section */
+  .profile-posts-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .profile-posts-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-primary);
+  }
+
+  .profile-posts-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .posts-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .profile-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-8);
+    background: var(--color-surface-raised);
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  .posts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  /* Danger zone */
+  .danger-zone {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .danger-zone h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+
+  .btn-delete-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+    align-self: flex-start;
+  }
+
+  /* CTA button (reuse global style fallback) */
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.15s;
+  }
+
+  .btn-cta:hover {
+    background: var(--color-primary-dark);
+  }
+
+  @media (max-width: 600px) {
+    .profile-card {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: var(--space-4);
+    }
+  }
+</style>

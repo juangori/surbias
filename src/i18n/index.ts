@@ -39,9 +39,9 @@ export function timeAgo(date: Date, locale: Locale): string {
   const i = t(locale);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
-  if (seconds < 60) return i.time.just_now;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${i.time.min}`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}${i.time.hour}`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}${i.time.day}`;
-  return `${Math.floor(seconds / 2592000)}${i.time.month}`;
+  if (seconds < 60) return `< 1 ${i.common.time_min}`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${i.common.time_min}`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}${i.common.time_hour}`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}${i.common.time_day}`;
+  return `${Math.floor(seconds / 2592000)}${i.common.time_month}`;
 }

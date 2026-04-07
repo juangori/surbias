@@ -10,6 +10,7 @@
     "share": "Partagez votre histoire",
     "login": "Se connecter",
     "logout": "Se déconnecter",
+    "profile": "Mes publications",
     "admin": "Admin"
   },
   "categories": {
@@ -107,7 +108,15 @@
     "write_comment": "Écrivez un commentaire...",
     "anonymous": "Anonyme",
     "terms": "Conditions d'utilisation",
-    "privacy": "Politique de confidentialité"
+    "privacy": "Politique de confidentialité",
+    "time_now": "maintenant",
+    "time_min": "min",
+    "time_hour": "h",
+    "time_day": "j",
+    "time_month": "mo",
+    "member_since": "Membre depuis",
+    "no_posts_yet": "Vous n'avez pas encore partagé d'histoires.",
+    "delete_account": "Supprimer le compte"
   },
   "errors": {
     "title_too_short": "Le titre est trop court",

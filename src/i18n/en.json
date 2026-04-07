@@ -10,6 +10,7 @@
     "share": "Share your story",
     "login": "Sign in",
     "logout": "Sign out",
+    "profile": "My Posts",
     "admin": "Admin"
   },
   "categories": {
@@ -107,7 +108,15 @@
     "write_comment": "Write a comment...",
     "anonymous": "Anonymous",
     "terms": "Terms of Service",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "time_now": "just now",
+    "time_min": "min",
+    "time_hour": "h",
+    "time_day": "d",
+    "time_month": "mo",
+    "member_since": "Member since",
+    "no_posts_yet": "You haven't shared any stories yet.",
+    "delete_account": "Delete account"
   },
   "errors": {
     "title_too_short": "Title is too short",

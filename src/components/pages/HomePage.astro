@@ -104,7 +104,7 @@ const postError = url.searchParams.get('error') || undefined;
         <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
       </div>
 
-      <div id="posts-container">
+      <div id="posts-container" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
         <div class="posts-grid">
           {results.length === 0 ? (
             <div class="notice notice-info">{i.common.empty}</div>
@@ -151,13 +151,27 @@ const postError = url.searchParams.get('error') || undefined;
 
 <script>
   (() => {
+    function getTimeLabels(): { min: string; hour: string; day: string; month: string } {
+      // Read from the html lang attribute, fall back to English
+      const lang = document.documentElement.lang || 'en';
+      const timeLabels: Record<string, { min: string; hour: string; day: string; month: string }> = {
+        en: { min: 'min', hour: 'h', day: 'd', month: 'mo' },
+        es: { min: 'min', hour: 'h', day: 'd', month: 'me' },
+        de: { min: 'Min', hour: 'Std', day: 'T', month: 'Mo' },
+        fr: { min: 'min', hour: 'h', day: 'j', month: 'mo' },
+        pt: { min: 'min', hour: 'h', day: 'd', month: 'me' },
+      };
+      return timeLabels[lang] || timeLabels['en'];
+    }
+
     function timeAgo(createdAt: number): string {
+      const { min, hour, day, month } = getTimeLabels();
       const seconds = Math.floor((Date.now() - createdAt) / 1000);
-      if (seconds < 60) return '< 1 min';
-      if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
-      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-      if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d`;
-      return `${Math.floor(seconds / 2592000)}mo`;
+      if (seconds < 60) return `< 1 ${min}`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} ${min}`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}${hour}`;
+      if (seconds < 2592000) return `${Math.floor(seconds / 86400)}${day}`;
+      return `${Math.floor(seconds / 2592000)}${month}`;
     }
 
     function getLocale(): string {
@@ -180,6 +194,28 @@ const postError = url.searchParams.get('error') || undefined;
       createdAt: number;
     }
 
+    function getReactionLabels(): Record<string, string> {
+      const container = document.getElementById('posts-container');
+      if (container?.dataset.reactionLabels) {
+        try {
+          return JSON.parse(container.dataset.reactionLabels) as Record<string, string>;
+        } catch {}
+      }
+      return { metoo: 'Me too', hug: 'Hug', strength: 'Strength', respect: 'Respect', solidarity: 'Solidarity' };
+    }
+
+    function getReadMoreLabel(): string {
+      const lang = document.documentElement.lang || 'en';
+      const labels: Record<string, string> = {
+        en: 'Read more',
+        es: 'Leer m\u00e1s',
+        de: 'Weiterlesen',
+        fr: 'Lire la suite',
+        pt: 'Ler mais',
+      };
+      return labels[lang] || labels['en'];
+    }
+
     function renderCard(post: Post): string {
       const createdAtMs = post.createdAt * 1000;
       const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
@@ -188,6 +224,8 @@ const postError = url.searchParams.get('error') || undefined;
         post.category.charAt(0).toUpperCase() + post.category.slice(1);
       const author = post.isAnonymous ? '---' : (post.userName || '---');
       const postPath = getLocalePath(`/post/${post.id}`);
+      const rl = getReactionLabels();
+      const readMore = getReadMoreLabel();
 
       return `
         <article class="post-card">
@@ -203,35 +241,37 @@ const postError = url.searchParams.get('error') || undefined;
           <p class="post-body-preview">${bodyPreview}</p>
           <div class="post-card-footer">
             <div class="reaction-bar">
-              <span class="reaction-btn" title="Me too">
-                <span class="reaction-label">Me too</span>
+              <span class="reaction-btn" title="${rl.metoo}">
+                <span class="reaction-label">${rl.metoo}</span>
                 <span class="reaction-count">${reactions.metoo || 0}</span>
               </span>
-              <span class="reaction-btn" title="Hug">
-                <span class="reaction-label">Hug</span>
+              <span class="reaction-btn" title="${rl.hug}">
+                <span class="reaction-label">${rl.hug}</span>
                 <span class="reaction-count">${reactions.hug || 0}</span>
               </span>
-              <span class="reaction-btn" title="Strength">
-                <span class="reaction-label">Strength</span>
+              <span class="reaction-btn" title="${rl.strength}">
+                <span class="reaction-label">${rl.strength}</span>
                 <span class="reaction-count">${reactions.strength || 0}</span>
               </span>
-              <span class="reaction-btn" title="Respect">
-                <span class="reaction-label">Respect</span>
+              <span class="reaction-btn" title="${rl.respect}">
+                <span class="reaction-label">${rl.respect}</span>
                 <span class="reaction-count">${reactions.respect || 0}</span>
               </span>
-              <span class="reaction-btn" title="Solidarity">
-                <span class="reaction-label">Solidarity</span>
+              <span class="reaction-btn" title="${rl.solidarity}">
+                <span class="reaction-label">${rl.solidarity}</span>
                 <span class="reaction-count">${reactions.solidarity || 0}</span>
               </span>
             </div>
-            <a href="${postPath}" class="read-more-link">Read &rarr;</a>
+            <a href="${postPath}" class="read-more-link">${readMore} &rarr;</a>
           </div>
         </article>`;
     }
 
     function renderGrid(data: { posts: Post[]; total: number }): string {
       if (!data.posts.length) {
-        return '<div class="notice notice-info">No stories yet. Be the first to share.</div>';
+        const container = document.getElementById('posts-container');
+        const emptyText = container?.dataset.emptyText || 'No stories yet. Be the first to share.';
+        return `<div class="notice notice-info">${emptyText}</div>`;
       }
       return `<div class="posts-grid">${data.posts.map(renderCard).join('')}</div>`;
     }

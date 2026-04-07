@@ -10,6 +10,7 @@
     "share": "Teile deine Geschichte",
     "login": "Anmelden",
     "logout": "Abmelden",
+    "profile": "Meine Beiträge",
     "admin": "Admin"
   },
   "categories": {
@@ -107,7 +108,15 @@
     "write_comment": "Schreibe einen Kommentar...",
     "anonymous": "Anonym",
     "terms": "Nutzungsbedingungen",
-    "privacy": "Datenschutz"
+    "privacy": "Datenschutz",
+    "time_now": "gerade",
+    "time_min": "Min",
+    "time_hour": "Std",
+    "time_day": "T",
+    "time_month": "Mo",
+    "member_since": "Mitglied seit",
+    "no_posts_yet": "Du hast noch keine Geschichten geteilt.",
+    "delete_account": "Konto löschen"
   },
   "errors": {
     "title_too_short": "Titel ist zu kurz",

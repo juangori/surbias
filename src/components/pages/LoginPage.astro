@@ -93,7 +93,7 @@ const i = t(locale);
       }
       window.location.href = '/';
     } catch (err) {
-      alert('Error: ' + (err as Error).message);
+      window.showToast('Error: ' + (err as Error).message, 'error');
     }
   });
 
