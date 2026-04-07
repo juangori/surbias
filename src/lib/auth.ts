@@ -3,6 +3,9 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { getDb } from '../db';
 
 export function createAuth(env: CloudflareEnv) {
+  if (!env.BETTER_AUTH_SECRET) {
+    throw new Error('[auth] BETTER_AUTH_SECRET is not set. Add it via: wrangler secret put BETTER_AUTH_SECRET');
+  }
   const db = getDb(env.DB);
 
   return betterAuth({
