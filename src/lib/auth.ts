@@ -24,7 +24,6 @@ export function createAuth(env: CloudflareEnv) {
         console.log(`[EMAIL VERIFY] User: ${user.email}, URL: ${url}`);
       },
       sendOnSignUp: false,
-      requireEmailVerification: false,
     },
     socialProviders: {
       google: {
