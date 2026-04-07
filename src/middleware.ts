@@ -45,17 +45,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Cache static pages at CDN edge — exclude pages that depend on session state
+  // Cache control: authenticated users always get fresh content
   const url2 = new URL(context.request.url);
   const hasSession = context.request.headers.get('cookie')?.includes('better-auth');
-  if (
+  if (hasSession) {
+    response.headers.set('Cache-Control', 'private, no-store');
+  } else if (
     context.request.method === 'GET' &&
-    !hasSession &&
     !url2.pathname.startsWith('/api/') &&
     !url2.pathname.startsWith('/admin/') &&
-    !url2.pathname.startsWith('/profile') &&
-    !url2.pathname.startsWith('/login') &&
-    !url2.pathname.startsWith('/saved')
+    !url2.pathname.startsWith('/login')
   ) {
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
   }
