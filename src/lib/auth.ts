@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { getDb } from '../db';
+import { users, sessions, accounts, verifications } from '../db/schema';
 
 export function createAuth(env: CloudflareEnv) {
   if (!env.BETTER_AUTH_SECRET) {
@@ -9,7 +10,15 @@ export function createAuth(env: CloudflareEnv) {
   const db = getDb(env.DB);
 
   return betterAuth({
-    database: drizzleAdapter(db, { provider: 'sqlite' }),
+    database: drizzleAdapter(db, {
+      provider: 'sqlite',
+      schema: {
+        user: users,
+        session: sessions,
+        account: accounts,
+        verification: verifications,
+      },
+    }),
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     emailAndPassword: {
