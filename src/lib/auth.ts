@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { getDb } from '../db';
 import { users, sessions, accounts, verifications } from '../db/schema';
+import { hashPassword, verifyPassword } from './password';
 
 export function createAuth(env: CloudflareEnv) {
   if (!env.BETTER_AUTH_SECRET) {
@@ -23,6 +24,10 @@ export function createAuth(env: CloudflareEnv) {
     secret: env.BETTER_AUTH_SECRET,
     emailAndPassword: {
       enabled: true,
+      password: {
+        hash: hashPassword,
+        verify: verifyPassword,
+      },
       sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
         // Placeholder: log the reset URL. In production, integrate with an email service (Resend, SendGrid, etc.)
         console.log(`[PASSWORD RESET] User: ${user.email}, URL: ${url}`);
