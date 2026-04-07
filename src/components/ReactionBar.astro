@@ -59,8 +59,8 @@ const i = t(locale);
           // Toggle reacted state
           btn.classList.toggle('reacted');
         }
-      } catch {
-        // Silently fail - not critical
+      } catch (err) {
+        console.error('Reaction failed:', err);
       }
     });
   });

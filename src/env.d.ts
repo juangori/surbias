@@ -20,3 +20,13 @@ declare module 'cloudflare:workers' {
   const env: CloudflareEnv;
   export { env };
 }
+
+// Global helpers injected by Base.astro (is:inline script)
+interface Window {
+  showToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  showModal: (opts: {
+    title?: string;
+    html?: string;
+    buttons?: Array<{ text: string; class?: string; onClick?: () => void | Promise<void> }>;
+  }) => void;
+}

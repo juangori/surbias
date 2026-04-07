@@ -1636,3 +1636,65 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--surbias-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  z-index: 9999;
+  font-size: 0.9rem;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--surbias-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surbias-border);
+  border-top-color: var(--surbias-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   SHARE BUTTONS
+   ============================================================ */
+.share-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--surbias-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  text-decoration: none;
+  color: var(--surbias-text-muted);
+  transition: background 0.15s;
+}
+.share-btn:hover { background: var(--surbias-warm-light); color: var(--surbias-text); }

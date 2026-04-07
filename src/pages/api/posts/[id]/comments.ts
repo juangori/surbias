@@ -5,6 +5,7 @@ import { getDb } from '../../../../db';
 import { comments } from '../../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { getIpHash, checkRateLimit } from '../../../../lib/rate-limit';
+import { validateComment } from '../../../../lib/moderation';
 
 export const GET: APIRoute = async ({ params }) => {
   const db = getDb(env.DB);
@@ -26,8 +27,10 @@ export const POST: APIRoute = async ({ request, params }) => {
 
   const body = await request.json() as { body: string; authorName?: string; isAnonymous?: boolean };
 
-  if (!body.body || body.body.trim().length < 2 || body.body.length > 2000) {
-    return new Response(JSON.stringify({ error: 'Invalid comment' }), { status: 400 });
+  // Validate comment content
+  const validation = validateComment(body.body);
+  if (!validation.valid) {
+    return new Response(JSON.stringify({ error: validation.error }), { status: 400 });
   }
 
   const ipHash = getIpHash(request);

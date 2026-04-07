@@ -35,7 +35,8 @@ function totalReactions(reactionCounts: string): number {
   try {
     const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
     return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
-  } catch {
+  } catch (err) {
+    console.error('Failed to parse reactionCounts:', err);
     return 0;
   }
 }
@@ -104,7 +105,7 @@ const postError = url.searchParams.get('error') || undefined;
         <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
       </div>
 
-      <div id="posts-container" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
+      <div id="posts-container" aria-live="polite" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
         <div class="posts-grid">
           {results.length === 0 ? (
             <div class="notice notice-info">{i.common.empty}</div>
@@ -199,7 +200,9 @@ const postError = url.searchParams.get('error') || undefined;
       if (container?.dataset.reactionLabels) {
         try {
           return JSON.parse(container.dataset.reactionLabels) as Record<string, string>;
-        } catch {}
+        } catch (err) {
+          console.error('Failed to parse reactionLabels:', err);
+        }
       }
       return { metoo: 'Me too', hug: 'Hug', strength: 'Strength', respect: 'Respect', solidarity: 'Solidarity' };
     }
@@ -300,7 +303,8 @@ const postError = url.searchParams.get('error') || undefined;
         if (!res.ok) throw new Error('fetch failed');
         const data = await res.json() as { posts: Post[]; total: number };
         container.innerHTML = renderGrid(data);
-      } catch {
+      } catch (err) {
+        console.error('Posts fetch failed:', err);
         // leave current content
       } finally {
         container.style.opacity = '';

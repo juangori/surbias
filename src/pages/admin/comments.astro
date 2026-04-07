@@ -1,0 +1,312 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getDb } from '../../db';
+import { comments, posts, users } from '../../db/schema';
+import { desc, eq } from 'drizzle-orm';
+import { createAuth } from '../../lib/auth';
+import { env } from 'cloudflare:workers';
+import ChartBar from '@lucide/astro/icons/chart-bar';
+import Users from '@lucide/astro/icons/users';
+import FileText from '@lucide/astro/icons/file-text';
+import Flag from '@lucide/astro/icons/flag';
+import Shield from '@lucide/astro/icons/shield';
+import Trash2 from '@lucide/astro/icons/trash-2';
+import ClipboardList from '@lucide/astro/icons/clipboard-list';
+import MessageSquare from '@lucide/astro/icons/message-square';
+
+// Admin auth check (role-based)
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+const db = getDb(env.DB);
+const userRecord = session?.user ? await db.select().from(users).where(eq(users.id, session.user.id)).limit(1) : [];
+const isAdmin = userRecord[0]?.role === 'admin';
+if (!isAdmin) return Astro.redirect('/login');
+
+// Fetch all comments with associated post title and author info
+const allComments = await db
+  .select({
+    commentId: comments.id,
+    body: comments.body,
+    authorName: comments.authorName,
+    isAnonymous: comments.isAnonymous,
+    createdAt: comments.createdAt,
+    postId: comments.postId,
+    postTitle: posts.title,
+    userId: comments.userId,
+  })
+  .from(comments)
+  .leftJoin(posts, eq(comments.postId, posts.id))
+  .orderBy(desc(comments.createdAt))
+  .limit(100);
+
+function normalizeDate(val: unknown): Date {
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') return new Date(val * 1000);
+  return new Date(String(val));
+}
+
+function timeAgo(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+---
+
+<Base title="Admin — Comments">
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <nav class="admin-sidebar">
+      <div class="admin-sidebar-logo">
+        <Shield size={20} />
+        <span>Admin</span>
+      </div>
+      <ul class="admin-nav-links">
+        <li><a href="/admin"><ChartBar size={16} /> Dashboard</a></li>
+        <li><a href="/admin/users"><Users size={16} /> Users</a></li>
+        <li><a href="/admin/posts"><FileText size={16} /> Posts</a></li>
+        <li><a href="/admin/comments" class="active"><MessageSquare size={16} /> Comments</a></li>
+        <li><a href="/admin/flags"><Flag size={16} /> Flags</a></li>
+        <li><a href="/admin/audit"><ClipboardList size={16} /> Audit Log</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main content -->
+    <div class="admin-main">
+      <header class="admin-page-header">
+        <h1>Comments</h1>
+        <p class="admin-subtitle">{allComments.length} comment{allComments.length !== 1 ? 's' : ''} (most recent 100)</p>
+      </header>
+
+      {allComments.length === 0 ? (
+        <div class="notice notice-info">No comments found.</div>
+      ) : (
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Comment</th>
+                <th>Post</th>
+                <th>Author</th>
+                <th>Posted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allComments.map((comment) => {
+                const date = normalizeDate(comment.createdAt);
+                const excerpt = comment.body.slice(0, 100) + (comment.body.length > 100 ? '…' : '');
+                const authorLabel = comment.isAnonymous
+                  ? 'Anonymous'
+                  : (comment.authorName ?? 'User');
+                return (
+                  <tr data-comment-id={comment.commentId}>
+                    <td class="comment-body-cell">{excerpt}</td>
+                    <td>
+                      {comment.postId ? (
+                        <a href={`/post/${comment.postId}`} class="admin-link" target="_blank" rel="noopener">
+                          {(comment.postTitle ?? comment.postId).slice(0, 45)}{(comment.postTitle ?? '').length > 45 ? '…' : ''}
+                        </a>
+                      ) : (
+                        <span class="admin-muted">—</span>
+                      )}
+                    </td>
+                    <td class="admin-muted">{authorLabel}</td>
+                    <td class="admin-muted">{timeAgo(date)}</td>
+                    <td>
+                      <button
+                        class="admin-btn admin-btn--danger"
+                        data-action="delete_comment"
+                        data-comment-id={comment.commentId}
+                        title="Delete comment"
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll('[data-action="delete_comment"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLElement;
+      const commentId = el.dataset.commentId!;
+
+      if (!confirm('Permanently delete this comment?')) return;
+
+      el.setAttribute('disabled', 'true');
+
+      const res = await fetch('/api/admin/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_comment', commentId }),
+      });
+
+      if (res.ok) {
+        const row = el.closest('tr');
+        row?.remove();
+      } else {
+        alert('Failed to delete comment. Please try again.');
+        el.removeAttribute('disabled');
+      }
+    });
+  });
+</script>
+
+<style>
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 120px);
+    align-items: start;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 1.5rem;
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--surbias-primary);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    margin-bottom: 1rem;
+  }
+
+  .admin-nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+
+  .admin-nav-links a:hover,
+  .admin-nav-links a.active {
+    background: var(--surbias-warm-light);
+    color: var(--surbias-primary);
+  }
+
+  .admin-page-header { margin-bottom: 1.5rem; }
+  .admin-page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem;
+  }
+  .admin-subtitle { color: var(--surbias-text-muted); font-size: 0.9rem; margin: 0; }
+
+  .admin-table-wrap {
+    background: var(--surbias-card-bg);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .admin-table thead th {
+    background: var(--surbias-warm-light);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--surbias-text-muted);
+    border-bottom: 1px solid var(--surbias-border);
+  }
+
+  .admin-table tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    vertical-align: middle;
+  }
+
+  .admin-table tbody tr:last-child td { border-bottom: none; }
+  .admin-table tbody tr:hover td { background: var(--surbias-warm-light); }
+
+  .comment-body-cell {
+    max-width: 360px;
+    word-break: break-word;
+    font-size: 0.85rem;
+    color: var(--surbias-text);
+  }
+
+  .admin-link {
+    color: var(--surbias-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .admin-link:hover { text-decoration: underline; }
+
+  .admin-muted { color: var(--surbias-text-muted); font-size: 0.8rem; }
+
+  .admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--dur-fast);
+    white-space: nowrap;
+  }
+  .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .admin-btn--danger { background: var(--surbias-danger-light); color: var(--surbias-danger); }
+  .admin-btn:hover:not(:disabled) { opacity: 0.75; }
+
+  @media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; }
+    .admin-sidebar { position: static; }
+    .admin-nav-links { flex-direction: row; flex-wrap: wrap; }
+    .admin-table { font-size: 0.8rem; }
+    .admin-table thead th,
+    .admin-table tbody td { padding: 0.5rem 0.6rem; }
+    .comment-body-cell { max-width: 200px; }
+  }
+</style>

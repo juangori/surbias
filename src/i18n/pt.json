@@ -55,7 +55,10 @@
     "or": "ou",
     "google_login": "Continuar com Google",
     "no_account": "Não tem conta?",
-    "has_account": "Já tem conta?"
+    "has_account": "Já tem conta?",
+    "forgot_password": "Esqueceu a senha?",
+    "reset_sent": "Um link de redefinição de senha foi enviado para o seu email.",
+    "enter_email_reset": "Digite seu email para redefinir sua senha"
   },
   "about": {
     "title": "O que é Surbias?",

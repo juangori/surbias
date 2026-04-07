@@ -16,7 +16,8 @@ function totalReactions(reactionCounts: string): number {
   try {
     const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
     return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
-  } catch {
+  } catch (err) {
+    console.error('Failed to parse reactionCounts:', err);
     return 0;
   }
 }

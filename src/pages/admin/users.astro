@@ -13,14 +13,16 @@ import Shield from '@lucide/astro/icons/shield';
 import Search from '@lucide/astro/icons/search';
 import CircleX from '@lucide/astro/icons/circle-x';
 import CircleCheck from '@lucide/astro/icons/circle-check';
+import ClipboardList from '@lucide/astro/icons/clipboard-list';
+import MessageSquare from '@lucide/astro/icons/message-square';
 
-// Admin auth check
+// Admin auth check (role-based)
 const auth = createAuth(env);
 const session = await auth.api.getSession({ headers: Astro.request.headers });
-const isAdmin = session?.user?.email === env.ADMIN_EMAIL;
-if (!isAdmin) return Astro.redirect('/login');
-
 const db = getDb(env.DB);
+const userRecord = session?.user ? await db.select().from(users).where(eq(users.id, session.user.id)).limit(1) : [];
+const isAdmin = userRecord[0]?.role === 'admin';
+if (!isAdmin) return Astro.redirect('/login');
 
 // Search query from URL
 const searchQuery = Astro.url.searchParams.get('q')?.trim() ?? '';
@@ -66,7 +68,9 @@ function formatDate(date: Date): string {
         <li><a href="/admin"><ChartBar size={16} /> Dashboard</a></li>
         <li><a href="/admin/users" class="active"><Users size={16} /> Users</a></li>
         <li><a href="/admin/posts"><FileText size={16} /> Posts</a></li>
+        <li><a href="/admin/comments"><MessageSquare size={16} /> Comments</a></li>
         <li><a href="/admin/flags"><Flag size={16} /> Flags</a></li>
+        <li><a href="/admin/audit"><ClipboardList size={16} /> Audit Log</a></li>
       </ul>
     </nav>
 

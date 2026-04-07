@@ -16,7 +16,7 @@ const i = t(locale);
   <nav class="site-nav">
     <!-- Logo -->
     <a href={localePath(locale, '/')} class="site-logo" aria-label="Surbias home">
-      <img src="/logo.png" alt="" width="28" height="28" class="logo-icon" />
+      <img src="/logo.png" alt="" width="28" height="28" class="logo-icon" loading="eager" />
       <span class="logo-text">SURBIAS</span>
     </a>
 
@@ -124,7 +124,8 @@ const i = t(locale);
       try {
         await fetch('/api/auth/sign-out', { method: 'POST' });
         window.location.href = '/';
-      } catch {
+      } catch (err) {
+        console.error('Sign-out request failed:', err);
         window.location.href = '/';
       }
     });
@@ -280,8 +281,8 @@ const i = t(locale);
   .nav-coffee {
     font-size: 0.8rem;
     padding: 5px 10px;
-    background: #f8f0e3;
-    color: #8b6914;
+    background: var(--surbias-warm-light);
+    color: var(--surbias-warm);
     border-radius: 6px;
     text-decoration: none;
     font-weight: 500;
@@ -289,7 +290,7 @@ const i = t(locale);
   }
 
   .nav-coffee:hover {
-    background: #f0e4cc;
+    background: var(--surbias-warm-tint);
   }
 
   /* Mobile controls (CTA + hamburger) */

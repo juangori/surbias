@@ -7,7 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import { getIpHash } from '../../../../lib/rate-limit';
 
 const VALID_REASONS = ['spam', 'offensive', 'harmful', 'other'];
-const AUTO_HIDE_THRESHOLD = 3;
+const AUTO_HIDE_THRESHOLD = 5;
 
 export const POST: APIRoute = async ({ params, request }) => {
   const db = getDb(env.DB);
@@ -55,8 +55,9 @@ export const POST: APIRoute = async ({ params, request }) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch {
-    // Already flagged by this user
+  } catch (err) {
+    // Already flagged by this user (unique constraint violation) or other error
+    console.error('Flag insert failed:', err);
     return new Response(JSON.stringify({ error: 'Already reported' }), {
       status: 409,
       headers: { 'Content-Type': 'application/json' },

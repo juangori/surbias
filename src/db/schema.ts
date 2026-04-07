@@ -8,6 +8,7 @@ export const users = sqliteTable('users', {
   image: text('image'),
   locale: text('locale').default('en'),
   banned: integer('banned', { mode: 'boolean' }).default(false),
+  role: text('role').notNull().default('user'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -104,5 +105,28 @@ export const comments = sqliteTable('comments', {
   body: text('body').notNull(),
   authorName: text('author_name'),
   isAnonymous: integer('is_anonymous', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+// rate_limits: tracks per-IP rate limiting for API actions.
+// NOTE: Schema-level CHECK constraints (9.4/9.5, e.g. locale enum enforcement,
+// non-negative flag counts) are not supported via ALTER TABLE in SQLite — these
+// are enforced at the application layer. The locale column already defaults to 'en'.
+export const rateLimits = sqliteTable('rate_limits', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  key: text('key').notNull(),
+  action: text('action').notNull(),
+  count: integer('count').notNull().default(1),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const auditLogs = sqliteTable('audit_logs', {
+  id: text('id').primaryKey(),
+  actorId: text('actor_id').notNull(),
+  actorEmail: text('actor_email').notNull(),
+  action: text('action').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  details: text('details'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

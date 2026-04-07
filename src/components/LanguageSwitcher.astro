@@ -36,7 +36,8 @@ function switchLocalePath(targetLocale: Locale): string {
 ---
 
 <div class="lang-switcher">
-  <select onchange="window.location.href = this.value">
+  <label for="lang-select" class="sr-only">Language</label>
+  <select id="lang-select" onchange="window.location.href = this.value">
     {LOCALES.map((loc) => (
       <option value={switchLocalePath(loc)} selected={loc === locale}>
         {LOCALE_FLAGS[loc]}

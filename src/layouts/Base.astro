@@ -21,7 +21,9 @@ try {
   if (session?.user) {
     currentUser = { id: session.user.id, name: session.user.name, email: session.user.email };
   }
-} catch {}
+} catch (err) {
+  console.error('Session detection failed:', err);
+}
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://surbias.com');
 const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline}` : `${title} | Surbias`;
@@ -49,6 +51,21 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://surbias.com/logo.png" />
+
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#4a7c59" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:locale" content={locale} />
+    <meta property="og:image" content="https://surbias.com/logo.png" />
+
+    <!-- hreflang -->
+    <link rel="alternate" hreflang="en" href="https://surbias.com/" />
+    <link rel="alternate" hreflang="es" href="https://surbias.com/es/" />
+    <link rel="alternate" hreflang="de" href="https://surbias.com/de/" />
+    <link rel="alternate" hreflang="fr" href="https://surbias.com/fr/" />
+    <link rel="alternate" hreflang="pt" href="https://surbias.com/pt/" />
+    <link rel="alternate" hreflang="x-default" href="https://surbias.com/" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo.png" />
@@ -57,7 +74,7 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -65,8 +82,9 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <link rel="stylesheet" href="/styles/global.css" />
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
     <Header locale={locale} user={currentUser} />
-    <main class="container">
+    <main class="container" id="main-content">
       <slot />
     </main>
     <Footer locale={locale} />

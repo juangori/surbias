@@ -121,7 +121,15 @@ const i = t(locale);
 
     <!-- Cloudflare Turnstile -->
     <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" style="margin-top: 0.75rem;"></div>
-    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script is:inline>
+      if (!document.getElementById('cf-turnstile-script')) {
+        var s = document.createElement('script');
+        s.id = 'cf-turnstile-script';
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        s.async = true;
+        document.head.appendChild(s);
+      }
+    </script>
   </form>
 </div>
 

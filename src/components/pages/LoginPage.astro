@@ -60,6 +60,14 @@ const i = t(locale);
         >
           {i.auth.no_account}
         </a>
+        <a
+          href="#"
+          id="forgot-password"
+          data-prompt={i.auth.enter_email_reset}
+          data-success={i.auth.reset_sent}
+        >
+          {i.auth.forgot_password}
+        </a>
       </div>
     </div>
   </div>
@@ -73,6 +81,7 @@ const i = t(locale);
   const toggleBtn = document.getElementById('toggle-mode') as HTMLAnchorElement;
   const loginBtn = document.getElementById('login-btn') as HTMLButtonElement;
   const googleBtn = document.getElementById('google-login') as HTMLButtonElement;
+  const forgotBtn = document.getElementById('forgot-password') as HTMLAnchorElement;
 
   toggleBtn?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -99,6 +108,35 @@ const i = t(locale);
 
   googleBtn?.addEventListener('click', async () => {
     await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+  });
+
+  forgotBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const promptText = forgotBtn.dataset.prompt ?? 'Enter your email to reset your password';
+    const successText = forgotBtn.dataset.success ?? 'Password reset link sent to your email.';
+    const inputId = 'forgot-email-input';
+
+    window.showModal({
+      title: promptText,
+      html: `<input id="${inputId}" type="email" placeholder="you@example.com" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid var(--surbias-border);border-radius:var(--radius-md);font-size:0.95rem;font-family:inherit;" />`,
+      buttons: [
+        { text: 'Cancel' },
+        {
+          text: 'Send reset link',
+          class: 'btn-cta',
+          onClick: async () => {
+            const emailVal = (document.getElementById(inputId) as HTMLInputElement)?.value?.trim();
+            if (!emailVal) return;
+            try {
+              await authClient.requestPasswordReset({ email: emailVal, redirectTo: '/login' });
+              window.showToast(successText, 'success');
+            } catch (err) {
+              window.showToast('Error: ' + (err as Error).message, 'error');
+            }
+          },
+        },
+      ],
+    });
   });
 </script>
 

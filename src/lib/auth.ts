@@ -11,6 +11,17 @@ export function createAuth(env: CloudflareEnv) {
     secret: env.BETTER_AUTH_SECRET,
     emailAndPassword: {
       enabled: true,
+      sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+        // Placeholder: log the reset URL. In production, integrate with an email service (Resend, SendGrid, etc.)
+        console.log(`[PASSWORD RESET] User: ${user.email}, URL: ${url}`);
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
+        // Placeholder: log the verification URL. In production, integrate with an email service.
+        console.log(`[EMAIL VERIFY] User: ${user.email}, URL: ${url}`);
+      },
+      sendOnSignUp: true,
     },
     socialProviders: {
       google: {

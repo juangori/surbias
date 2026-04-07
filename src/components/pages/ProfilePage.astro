@@ -77,13 +77,34 @@ const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
     <!-- Danger zone -->
     <section class="danger-zone">
       <h3>{i.common.delete_account}</h3>
-      <button class="btn-delete-account" disabled title="Coming soon">
+      <button class="btn-delete-account" id="delete-account-btn">
         <Trash2 size={15} aria-hidden="true" />
         {i.common.delete_account}
       </button>
     </section>
   </div>
 </Base>
+
+<script>
+  document.getElementById('delete-account-btn')?.addEventListener('click', function() {
+    window.showModal({
+      title: 'Delete account?',
+      html: '<p>This will permanently delete your account. Your posts will be anonymized. This action cannot be undone.</p>',
+      buttons: [
+        { text: 'Cancel', class: '' },
+        { text: 'Delete my account', class: 'modal-btn-danger', onClick: async function() {
+          var res = await fetch('/api/account/delete', { method: 'POST' });
+          if (res.ok) {
+            window.showToast('Account deleted.', 'success');
+            setTimeout(function() { window.location.href = '/'; }, 1500);
+          } else {
+            window.showToast('Could not delete account. Please try again.', 'error');
+          }
+        }}
+      ]
+    });
+  });
+</script>
 
 <style>
   .profile-page {
@@ -227,9 +248,14 @@ const memberSinceFormatted = memberSince.toLocaleDateString(locale, {
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--color-text-muted);
-    cursor: not-allowed;
-    opacity: 0.6;
+    cursor: pointer;
     align-self: flex-start;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-delete-account:hover {
+    border-color: var(--surbias-danger, #dc2626);
+    color: var(--surbias-danger, #dc2626);
   }
 
   /* CTA button (reuse global style fallback) */

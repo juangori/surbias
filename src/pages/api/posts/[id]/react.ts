@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import { nanoid } from 'nanoid';
 import { getDb } from '../../../../db';
 import { reactions, posts, REACTION_TYPES } from '../../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getIpHash } from '../../../../lib/rate-limit';
 
 export const POST: APIRoute = async ({ params, request }) => {
@@ -33,15 +33,17 @@ export const POST: APIRoute = async ({ params, request }) => {
       createdAt: new Date(),
     });
 
-    // Update reaction counts on the post
-    const allReactions = await db
-      .select({ type: reactions.type })
+    // Recompute counts from source of truth via SQL aggregation —
+    // avoids race conditions from read-modify-write on the JSON column.
+    const countRows = await db
+      .select({ type: reactions.type, count: sql<number>`count(*)` })
       .from(reactions)
-      .where(eq(reactions.postId, postId));
+      .where(eq(reactions.postId, postId))
+      .groupBy(reactions.type);
 
     const counts: Record<string, number> = {};
-    for (const r of allReactions) {
-      counts[r.type] = (counts[r.type] || 0) + 1;
+    for (const row of countRows) {
+      counts[row.type] = row.count;
     }
 
     await db
@@ -52,8 +54,9 @@ export const POST: APIRoute = async ({ params, request }) => {
     return new Response(JSON.stringify({ reactionCounts: counts }), {
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch {
-    // Duplicate reaction - return current counts
+  } catch (err) {
+    // Duplicate reaction or DB error - return current counts
+    console.error('Reaction upsert failed:', err);
     const post = await db.select({ reactionCounts: posts.reactionCounts }).from(posts).where(eq(posts.id, postId));
     const counts = JSON.parse(post[0]?.reactionCounts || '{}');
     return new Response(JSON.stringify({ reactionCounts: counts }), {
