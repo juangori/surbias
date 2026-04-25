@@ -63,6 +63,7 @@ export type ReactionType = typeof REACTION_TYPES[number];
 export const posts = sqliteTable('posts', {
   id: text('id').primaryKey(),
   userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  slug: text('slug'),
   category: text('category').notNull(),
   title: text('title').notNull(),
   body: text('body').notNull(),

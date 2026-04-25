@@ -5,6 +5,7 @@ interface Props {
   locale: Locale;
   post: {
     id: string;
+    slug?: string | null;
     title: string;
     body: string;
     category: string;
@@ -23,10 +24,11 @@ const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Num
 const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
 const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
 const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
+const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
 ---
 
 <article class="post-card">
-  <a href={localePath(locale, `/post/${post.id}`)} class="post-card-link" aria-label={post.title}></a>
+  <a href={localePath(locale, postPath)} class="post-card-link" aria-label={post.title}></a>
   <div class="post-card-accent"></div>
 
   <!-- Metadata -->
@@ -40,7 +42,7 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
 
   <!-- Title -->
   <h3>
-    <a href={localePath(locale, `/post/${post.id}`)}>{post.title}</a>
+    <a href={localePath(locale, postPath)}>{post.title}</a>
   </h3>
 
   <!-- Body preview -->
@@ -80,7 +82,7 @@ const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : p
         <svg class="bookmark-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
         <span class="bookmark-label">{bookmarked ? i.nav.saved : 'Save'}</span>
       </button>
-      <a href={localePath(locale, `/post/${post.id}`)} class="read-more-link">
+      <a href={localePath(locale, postPath)} class="read-more-link">
         {i.post.read_more} &rarr;
       </a>
     </div>

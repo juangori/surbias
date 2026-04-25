@@ -1,5 +1,7 @@
 ---
 import PostDetailPage from '../../components/pages/PostDetailPage.astro';
-const { id } = Astro.params;
+
+const { id: rawId } = Astro.params;
+const postId = rawId!.length > 12 ? rawId!.slice(-12) : rawId!;
 ---
-<PostDetailPage postId={id!} />
+<PostDetailPage postId={postId} />

@@ -8,6 +8,7 @@ import { verifyTurnstile } from '../../../lib/turnstile';
 import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
 import { validatePost, isHoneypotFilled } from '../../../lib/moderation';
 import { createAuth } from '../../../lib/auth';
+import { generateSlug } from '../../../lib/slug';
 
 const POSTS_PER_PAGE = 20;
 
@@ -128,9 +129,11 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   }
 
   const id = nanoid(12);
+  const slug = generateSlug(title);
   await db.insert(posts).values({
     id,
     userId: session.user.id,
+    slug,
     title,
     body,
     category,
@@ -161,5 +164,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
   }
 
-  return redirect(`${localePrefix}/post/${id}`, 302);
+  const postPath = slug ? `${slug}-${id}` : id;
+  return redirect(`${localePrefix}/post/${postPath}`, 302);
 };

@@ -84,6 +84,9 @@ const relatedPosts = await db
   )
   .orderBy(desc(posts.createdAt))
   .limit(3);
+
+const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
+const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
 ---
 
 <Base title={post.title} description={post.body.slice(0, 160) + '...'} ogImage={`https://surbias.com/api/og/${post.id}`}>
@@ -138,9 +141,9 @@ const relatedPosts = await db
 
           <!-- Share buttons -->
           <div class="share-buttons" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`https://surbias.com${localePath(locale, '/post/' + post.id)}`)}`} target="_blank" rel="noopener" class="share-btn">Share on X</a>
-            <a href={`https://wa.me/?text=${encodeURIComponent(post.title + ' - https://surbias.com' + localePath(locale, '/post/' + post.id))}`} target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
-            <a href={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://surbias.com${localePath(locale, '/post/' + post.id)}`)}`} target="_blank" rel="noopener" class="share-btn">QR Code</a>
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">Share on X</a>
+            <a href={`https://wa.me/?text=${encodeURIComponent(post.title + ' - ' + postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
+            <a href={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">QR Code</a>
           </div>
 
           <!-- Embed code -->

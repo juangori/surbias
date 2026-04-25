@@ -13,6 +13,7 @@
   "vars": {
     "TURNSTILE_SITE_KEY": "0x4AAAAAAC1DD_8axJV9ZBhi",
     "BETTER_AUTH_URL": "https://surbias.com",
-    "ADMIN_EMAIL": "admin@surbias.com"
+    "ADMIN_EMAIL": "admin@surbias.com",
+    "FROM_EMAIL": "Surbias <noreply@surbias.com>"
   }
 }
