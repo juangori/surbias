@@ -11,9 +11,11 @@ export const GET: APIRoute = async ({ params }) => {
   const title = post[0]?.title || 'Surbias';
   const category = post[0]?.category || '';
 
-  // Escape for SVG
-  const escTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 80);
-  const escCat = category.charAt(0).toUpperCase() + category.slice(1);
+  function escSvg(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+  const escTitle = escSvg(title).slice(0, 80);
+  const escCat = escSvg(category.charAt(0).toUpperCase() + category.slice(1));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
     <rect width="1200" height="630" fill="#f5f9f6"/>

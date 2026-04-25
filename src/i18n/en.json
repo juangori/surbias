@@ -145,7 +145,7 @@
     "title_too_long": "Title is too long (max 150 characters)",
     "body_too_short": "Story is too short (min 20 characters)",
     "body_too_long": "Story is too long (max 5000 characters)",
-    "too_many_urls": "Too many links (max 3)",
+    "too_many_urls": "Links are not allowed in stories",
     "blocked_content": "Content contains blocked words",
     "rate_limited": "Too many posts. Try again later.",
     "turnstile_failed": "Anti-bot verification failed. Reload the page.",

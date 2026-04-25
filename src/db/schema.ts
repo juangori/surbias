@@ -115,9 +115,8 @@ export const comments = sqliteTable('comments', {
 // are enforced at the application layer. The locale column already defaults to 'en'.
 export const rateLimits = sqliteTable('rate_limits', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  key: text('key').notNull(),
+  ipHash: text('ip_hash').notNull(),
   action: text('action').notNull(),
-  count: integer('count').notNull().default(1),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 

@@ -145,7 +145,7 @@
     "title_too_long": "Titel ist zu lang (max. 150 Zeichen)",
     "body_too_short": "Geschichte ist zu kurz (min. 20 Zeichen)",
     "body_too_long": "Geschichte ist zu lang (max. 5000 Zeichen)",
-    "too_many_urls": "Zu viele Links (max. 3)",
+    "too_many_urls": "Links sind in Geschichten nicht erlaubt",
     "blocked_content": "Inhalt enthält gesperrte Wörter",
     "rate_limited": "Zu viele Beiträge. Versuche es später erneut.",
     "turnstile_failed": "Anti-Bot-Überprüfung fehlgeschlagen. Seite neu laden.",

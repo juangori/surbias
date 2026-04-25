@@ -145,7 +145,7 @@
     "title_too_long": "Le titre est trop long (max 150 caractères)",
     "body_too_short": "L'histoire est trop courte (min 20 caractères)",
     "body_too_long": "L'histoire est trop longue (max 5000 caractères)",
-    "too_many_urls": "Trop de liens (max 3)",
+    "too_many_urls": "Les liens ne sont pas autorisés dans les histoires",
     "blocked_content": "Le contenu contient des mots bloqués",
     "rate_limited": "Trop de publications. Réessayez plus tard.",
     "turnstile_failed": "Vérification anti-bot échouée. Rechargez la page.",

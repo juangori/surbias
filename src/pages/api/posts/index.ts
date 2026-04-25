@@ -9,18 +9,6 @@ import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
 import { validatePost, isHoneypotFilled } from '../../../lib/moderation';
 
 const POSTS_PER_PAGE = 20;
-// Fetch extra rows for JS-side sorting (hot/popular) so we have enough after sort
-const SORT_FETCH_MULTIPLIER = 5;
-
-function totalReactions(reactionCounts: string): number {
-  try {
-    const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
-    return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
-  } catch (err) {
-    console.error('Failed to parse reactionCounts:', err);
-    return 0;
-  }
-}
 
 export const GET: APIRoute = async ({ request }) => {
   const db = getDb(env.DB);
@@ -59,19 +47,22 @@ export const GET: APIRoute = async ({ request }) => {
   let results;
 
   if (sort === 'hot' || sort === 'popular') {
-    // Fetch a larger batch and sort in JS by total reactions
-    const fetchLimit = POSTS_PER_PAGE * SORT_FETCH_MULTIPLIER;
-    const allRows = await db
+    const totalReactionsExpr = sql`(
+      COALESCE(json_extract(${posts.reactionCounts}, '$.metoo'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.hug'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.strength'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.respect'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.solidarity'), 0)
+    )`;
+
+    results = await db
       .select()
       .from(posts)
       .where(where)
-      .orderBy(desc(posts.createdAt))
-      .limit(fetchLimit);
-
-    allRows.sort((a, b) => totalReactions(b.reactionCounts) - totalReactions(a.reactionCounts));
-    results = allRows.slice(offset, offset + POSTS_PER_PAGE);
+      .orderBy(sql`${totalReactionsExpr} DESC`, desc(posts.createdAt))
+      .limit(POSTS_PER_PAGE)
+      .offset(offset);
   } else {
-    // Default: recent — order by createdAt DESC
     results = await db
       .select()
       .from(posts)
