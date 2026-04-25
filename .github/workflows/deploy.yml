@@ -1,0 +1,48 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Patch wrangler.json for Workers deploy
+        env:
+          KV_NAMESPACE_ID: cd7ad2b79517430ab2e9bcc0f469385c
+        run: |
+          node -e "
+          const f = 'dist/server/wrangler.json';
+          const c = JSON.parse(require('fs').readFileSync(f, 'utf8'));
+          delete c.pages_build_output_dir;
+          delete c.rules;
+          delete c.images;
+          delete c.no_bundle;
+          c.kv_namespaces = [{ binding: 'SESSION', id: process.env.KV_NAMESPACE_ID }];
+          require('fs').writeFileSync(f, JSON.stringify(c, null, 2));
+          "
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: dist/server
+          command: deploy --config wrangler.json
