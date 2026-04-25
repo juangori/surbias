@@ -73,6 +73,7 @@ export const posts = sqliteTable('posts', {
   flagCount: integer('flag_count').notNull().default(0),
   reactionCounts: text('reaction_counts').notNull().default('{}'),
   pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
+  isSeed: integer('is_seed', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 });
