@@ -13,6 +13,7 @@ interface Props {
     userName?: string | null;
     reactionCounts: string;
     createdAt: Date | number;
+    commentCount?: number;
   };
   bookmarked?: boolean;
 }
@@ -73,6 +74,12 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
       </span>
     </div>
     <div class="post-card-actions">
+      {(post.commentCount ?? 0) > 0 && (
+        <a href={localePath(locale, postPath)} class="comment-count-link" title={i.common.comments}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>{post.commentCount}</span>
+        </a>
+      )}
       <button
         class:list={['bookmark-btn', { 'is-bookmarked': bookmarked }]}
         data-post-id={post.id}
@@ -94,6 +101,22 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
     display: flex;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  .comment-count-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .comment-count-link:hover {
+    color: var(--color-primary);
   }
 
   .bookmark-btn {

@@ -8,6 +8,7 @@ import { createAuth } from '../../lib/auth';
 import { getDb } from '../../db';
 import { posts, reactions, categoryFollows, tags } from '../../db/schema';
 import { desc, eq, and, sql } from 'drizzle-orm';
+import { postWithAuthor } from '../../lib/post-query';
 import { getWeeklyPrompt } from '../../lib/prompts';
 import { env } from 'cloudflare:workers';
 
@@ -51,23 +52,21 @@ if (sort === 'hot') {
 
 const where = conditions.length === 1 ? conditions[0] : and(...conditions);
 
-function totalReactions(reactionCounts: string): number {
-  try {
-    const obj = JSON.parse(reactionCounts || '{}') as Record<string, number>;
-    return Object.values(obj).reduce((sum, v) => sum + (v || 0), 0);
-  } catch (err) {
-    console.error('Failed to parse reactionCounts:', err);
-    return 0;
-  }
-}
-
 let results;
 if (sort === 'hot' || sort === 'popular') {
-  const allRows = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage * 5);
-  allRows.sort((a, b) => totalReactions(b.reactionCounts) - totalReactions(a.reactionCounts));
-  results = allRows.slice((page - 1) * perPage, page * perPage);
+  const totalReactionsExpr = sql`(
+    COALESCE(json_extract(${posts.reactionCounts}, '$.metoo'), 0) +
+    COALESCE(json_extract(${posts.reactionCounts}, '$.hug'), 0) +
+    COALESCE(json_extract(${posts.reactionCounts}, '$.strength'), 0) +
+    COALESCE(json_extract(${posts.reactionCounts}, '$.respect'), 0) +
+    COALESCE(json_extract(${posts.reactionCounts}, '$.solidarity'), 0)
+  )`;
+  results = await db.select(postWithAuthor).from(posts).where(where)
+    .orderBy(sql`${totalReactionsExpr} DESC`, desc(posts.createdAt))
+    .limit(perPage).offset((page - 1) * perPage);
 } else {
-  results = await db.select().from(posts).where(where).orderBy(desc(posts.createdAt)).limit(perPage).offset((page - 1) * perPage);
+  results = await db.select(postWithAuthor).from(posts).where(where)
+    .orderBy(desc(posts.createdAt)).limit(perPage).offset((page - 1) * perPage);
 }
 
 const countResult = await db.select({ count: sql<number>`count(*)` }).from(posts).where(where);
@@ -102,7 +101,7 @@ const randomPost = await db.select({ id: posts.id }).from(posts)
 const randomPostId = randomPost[0]?.id;
 
 // Pinned posts
-const pinnedPosts = await db.select().from(posts)
+const pinnedPosts = await db.select(postWithAuthor).from(posts)
   .where(and(eq(posts.status, 'published'), eq(posts.pinned, true), eq(posts.locale, locale)))
   .orderBy(desc(posts.createdAt))
   .limit(3);
@@ -112,7 +111,7 @@ const postError = url.searchParams.get('error') || undefined;
 
 // Failure of the Week: most-reacted post from last 7 days
 const sevenDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-const fotwCandidates = await db.select().from(posts)
+const fotwCandidates = await db.select(postWithAuthor).from(posts)
   .where(and(
     eq(posts.status, 'published'),
     eq(posts.locale, locale),
@@ -191,7 +190,14 @@ for (const p of fotwCandidates) {
       <div id="posts-container" aria-live="polite" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
         <div class="posts-grid">
           {results.length === 0 ? (
-            <div class="notice notice-info">{i.common.empty}</div>
+            <div class="empty-state">
+              <p class="empty-state-text">{category ? i.common.empty_category : i.common.empty}</p>
+              {currentUserId && (
+                <a href={localePath(locale, '/post/new')} class="btn-cta" style="font-size: 0.85rem;">
+                  {i.common.share_cta}
+                </a>
+              )}
+            </div>
           ) : (
             results.map((post) => <PostCard locale={locale} post={post} />)
           )}
@@ -201,13 +207,25 @@ for (const p of fotwCandidates) {
         {totalPages > 1 && (
           <div class="pagination">
             {page > 1 && (
-              <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}>
+              <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
                 &larr; {i.common.previous}
               </a>
             )}
-            <span>{i.common.page} {page} / {totalPages}</span>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, idx) => {
+              const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+              const p = start + idx;
+              if (p > totalPages) return null;
+              return (
+                <a
+                  href={`${localePath(locale, '/')}?page=${p}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}
+                  class:list={['pagination-num', { active: p === page }]}
+                >
+                  {p}
+                </a>
+              );
+            })}
             {page < totalPages && (
-              <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}>
+              <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
                 {i.common.next} &rarr;
               </a>
             )}
@@ -318,13 +336,17 @@ for (const p of fotwCandidates) {
 
     interface Post {
       id: string;
+      slug?: string | null;
       title: string;
       body: string;
       category: string;
       isAnonymous: boolean | number;
       userName?: string | null;
+      user_name?: string | null;
       reactionCounts: string;
       createdAt: number;
+      commentCount?: number;
+      comment_count?: number;
     }
 
     function getReactionLabels(): Record<string, string> {
@@ -357,8 +379,11 @@ for (const p of fotwCandidates) {
       const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
       const categoryLabel =
         post.category.charAt(0).toUpperCase() + post.category.slice(1);
-      const author = post.isAnonymous ? '---' : (post.userName || '---');
-      const postPath = getLocalePath(`/post/${post.id}`);
+      const authorName = post.userName || post.user_name;
+      const author = post.isAnonymous ? '---' : (authorName || '---');
+      const slugPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
+      const postPath = getLocalePath(slugPath);
+      const comments = post.commentCount ?? post.comment_count ?? 0;
       const rl = getReactionLabels();
       const readMore = getReadMoreLabel();
 
@@ -397,6 +422,7 @@ for (const p of fotwCandidates) {
                 <span class="reaction-count">${reactions.solidarity || 0}</span>
               </span>
             </div>
+            ${comments > 0 ? `<a href="${postPath}" class="comment-count-link" style="display:inline-flex;align-items:center;gap:3px;font-size:0.8rem;color:var(--color-text-muted);text-decoration:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${comments}</span></a>` : ''}
             <a href="${postPath}" class="read-more-link">${readMore} &rarr;</a>
           </div>
         </article>`;
@@ -592,5 +618,64 @@ for (const p of fotwCandidates) {
     text-align: center;
     font-size: 0.85rem;
     justify-content: center;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 1.5rem;
+    background: var(--color-surface-raised, #fafafa);
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .empty-state-text {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .pagination-btn:hover {
+    background: var(--surbias-warm-light);
+  }
+
+  .pagination-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .pagination-num:hover {
+    background: var(--surbias-warm-light);
+    color: var(--color-primary);
+  }
+
+  .pagination-num.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
   }
 </style>

@@ -13,7 +13,8 @@
     "profile": "My Posts",
     "admin": "Admin",
     "search": "Search",
-    "saved": "Saved"
+    "saved": "Saved",
+    "settings": "Settings"
   },
   "categories": {
     "all": "All",
@@ -99,6 +100,7 @@
     "loading": "Loading...",
     "error": "Something went wrong",
     "empty": "No stories yet. Be the first!",
+    "empty_category": "No stories in this category yet. Be the first to share!",
     "previous": "Previous",
     "next": "Next",
     "footer_text": "Because failing is normal.",

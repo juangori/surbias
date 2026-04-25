@@ -13,7 +13,8 @@
     "profile": "Mes publications",
     "admin": "Admin",
     "search": "Rechercher",
-    "saved": "Sauvegardés"
+    "saved": "Sauvegardés",
+    "settings": "Paramètres"
   },
   "categories": {
     "all": "Toutes",
@@ -99,6 +100,7 @@
     "loading": "Chargement...",
     "error": "Quelque chose s'est mal passé",
     "empty": "Pas encore d'histoires. Soyez le premier !",
+    "empty_category": "Aucune histoire dans cette catégorie. Soyez le premier !",
     "previous": "Précédent",
     "next": "Suivant",
     "footer_text": "Parce qu'échouer, c'est normal.",

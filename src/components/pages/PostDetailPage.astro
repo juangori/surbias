@@ -5,11 +5,13 @@ import CategoryFilter from '../../components/CategoryFilter.astro';
 import PostCard from '../../components/PostCard.astro';
 import { getLocaleFromUrl, t, timeAgo, localePath } from '../../i18n';
 import { getDb } from '../../db';
-import { posts, postTags, tags } from '../../db/schema';
+import { posts, postTags, tags, users, reactions as reactionsTable } from '../../db/schema';
 import { comments as commentsTable } from '../../db/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { createAuth } from '../../lib/auth';
+import { BADGES, computeBadges } from '../../lib/badges';
+import { postWithAuthor } from '../../lib/post-query';
 
 interface Props {
   postId: string;
@@ -20,7 +22,7 @@ const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
 const db = getDb(env.DB);
 
-const result = await db.select().from(posts).where(eq(posts.id, postId));
+const result = await db.select(postWithAuthor).from(posts).where(eq(posts.id, postId));
 const post = result[0];
 
 if (!post) {
@@ -31,6 +33,22 @@ const postComments = await db.select().from(commentsTable)
   .where(eq(commentsTable.postId, postId))
   .orderBy(desc(commentsTable.createdAt))
   .limit(50);
+
+// Compute author badges
+let authorBadges: typeof BADGES = [];
+if (post.userId) {
+  const [postCountRes, reactionCountRes, commentCountRes] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(posts).where(and(eq(posts.userId, post.userId), eq(posts.status, 'published'))),
+    db.select({ count: sql<number>`count(*)` }).from(reactionsTable).innerJoin(posts, eq(reactionsTable.postId, posts.id)).where(eq(posts.userId, post.userId)),
+    db.select({ count: sql<number>`count(*)` }).from(commentsTable).where(eq(commentsTable.userId, post.userId)),
+  ]);
+  const earnedIds = computeBadges({
+    postCount: postCountRes[0]?.count || 0,
+    totalReactionsReceived: reactionCountRes[0]?.count || 0,
+    commentCount: commentCountRes[0]?.count || 0,
+  });
+  authorBadges = BADGES.filter(b => earnedIds.includes(b.id));
+}
 
 const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
 const reactionCounts = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
@@ -72,7 +90,7 @@ const postTagRows = await db
 
 // Related posts (same category, same locale, excluding this post)
 const relatedPosts = await db
-  .select()
+  .select(postWithAuthor)
   .from(posts)
   .where(
     and(
@@ -116,7 +134,14 @@ const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
           <div class="post-meta" style="margin-bottom: 1.25rem;">
             <span class="category-badge">{categoryLabel}</span>
             <span class="post-meta-sep">&bull;</span>
-            <span>{post.isAnonymous ? '---' : (post.userName || '---')}</span>
+            <span>
+              {post.isAnonymous ? '---' : (post.userName || '---')}
+              {!post.isAnonymous && authorBadges.length > 0 && (
+                <span style="margin-left: 0.3rem;" title={authorBadges.map(b => b.name[locale] || b.name.en).join(', ')}>
+                  {authorBadges.map(b => b.icon).join('')}
+                </span>
+              )}
+            </span>
             <span class="post-meta-sep">&bull;</span>
             <span>{timeAgo(createdAt, locale)}</span>
           </div>

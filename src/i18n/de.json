@@ -13,7 +13,8 @@
     "profile": "Meine Beiträge",
     "admin": "Admin",
     "search": "Suche",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "settings": "Einstellungen"
   },
   "categories": {
     "all": "Alle",
@@ -99,6 +100,7 @@
     "loading": "Laden...",
     "error": "Etwas ist schiefgelaufen",
     "empty": "Noch keine Geschichten. Sei der Erste!",
+    "empty_category": "Keine Geschichten in dieser Kategorie. Sei der Erste!",
     "previous": "Zurück",
     "next": "Weiter",
     "footer_text": "Weil Scheitern normal ist.",

@@ -13,7 +13,8 @@
     "profile": "Mis publicaciones",
     "admin": "Admin",
     "search": "Buscar",
-    "saved": "Guardados"
+    "saved": "Guardados",
+    "settings": "Configuración"
   },
   "categories": {
     "all": "Todas",
@@ -99,6 +100,7 @@
     "loading": "Cargando...",
     "error": "Algo salió mal",
     "empty": "Todavía no hay historias. ¡Sé el primero!",
+    "empty_category": "No hay historias en esta categoría. ¡Sé el primero en compartir!",
     "previous": "Anterior",
     "next": "Siguiente",
     "footer_text": "Porque fallar es normal.",

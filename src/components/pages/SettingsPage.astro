@@ -1,0 +1,192 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
+import { createAuth } from '../../lib/auth';
+import { getDb } from '../../db';
+import { notificationPrefs } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { Settings } from '@lucide/astro';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+
+const auth = createAuth(env);
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+
+if (!session?.user) {
+  return Astro.redirect(localePath(locale, '/login'));
+}
+
+const db = getDb(env.DB);
+const prefs = await db.select().from(notificationPrefs).where(eq(notificationPrefs.userId, session.user.id)).limit(1);
+const notifPrefs = prefs[0] || { onReaction: true, onComment: true, onWeeklyDigest: true };
+---
+
+<Base title={i.nav.settings}>
+  <div class="settings-page">
+    <div class="settings-header">
+      <Settings size={28} aria-hidden="true" />
+      <h1>{i.nav.settings}</h1>
+    </div>
+
+    <!-- Alias section -->
+    <section class="settings-section">
+      <h2>{i.auth.alias}</h2>
+      <p class="settings-desc">{i.auth.alias_placeholder}</p>
+      <form id="alias-form" class="settings-form">
+        <input
+          type="text"
+          id="alias-input"
+          value={session.user.name || ''}
+          minlength="2"
+          maxlength="30"
+          required
+          class="settings-input"
+        />
+        <button type="submit" class="btn-cta" id="save-alias-btn" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">
+          Save
+        </button>
+      </form>
+    </section>
+
+    <!-- Email -->
+    <section class="settings-section">
+      <h2>Email</h2>
+      <p class="settings-value">{session.user.email}</p>
+    </section>
+
+    <!-- Notifications -->
+    <section class="settings-section">
+      <h2>Notifications</h2>
+      <div class="settings-toggles">
+        <label class="settings-toggle">
+          <input type="checkbox" id="notif-reaction" checked={notifPrefs.onReaction} class="toggle-checkbox" />
+          <span class="toggle-label">When someone reacts to my post</span>
+        </label>
+        <label class="settings-toggle">
+          <input type="checkbox" id="notif-comment" checked={notifPrefs.onComment} class="toggle-checkbox" />
+          <span class="toggle-label">When someone comments on my post</span>
+        </label>
+        <label class="settings-toggle">
+          <input type="checkbox" id="notif-digest" checked={notifPrefs.onWeeklyDigest} class="toggle-checkbox" />
+          <span class="toggle-label">Weekly digest email</span>
+        </label>
+      </div>
+    </section>
+  </div>
+</Base>
+
+<script>
+  document.getElementById('alias-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('alias-input') as HTMLInputElement;
+    const name = input?.value?.trim();
+    if (!name || name.length < 2) return;
+
+    const btn = document.getElementById('save-alias-btn') as HTMLButtonElement;
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/account/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        window.showToast('Saved!', 'success');
+      } else {
+        const data = await res.json();
+        window.showToast(data.error || 'Something went wrong', 'error');
+      }
+    } catch {
+      window.showToast('Something went wrong', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .settings-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--space-6) 0;
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+    color: var(--color-text-primary);
+  }
+
+  .settings-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .settings-section {
+    padding: var(--space-5) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .settings-section h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: var(--color-text-primary);
+  }
+
+  .settings-desc {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0 0 0.75rem;
+  }
+
+  .settings-value {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin: 0.25rem 0 0;
+  }
+
+  .settings-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .settings-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.9rem;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
+  .settings-input:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .settings-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+</style>

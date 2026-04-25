@@ -9,6 +9,7 @@ import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
 import { validatePost, isHoneypotFilled } from '../../../lib/moderation';
 import { createAuth } from '../../../lib/auth';
 import { generateSlug } from '../../../lib/slug';
+import { postWithAuthor } from '../../../lib/post-query';
 
 const POSTS_PER_PAGE = 20;
 
@@ -58,7 +59,7 @@ export const GET: APIRoute = async ({ request }) => {
     )`;
 
     results = await db
-      .select()
+      .select(postWithAuthor)
       .from(posts)
       .where(where)
       .orderBy(sql`${totalReactionsExpr} DESC`, desc(posts.createdAt))
@@ -66,7 +67,7 @@ export const GET: APIRoute = async ({ request }) => {
       .offset(offset);
   } else {
     results = await db
-      .select()
+      .select(postWithAuthor)
       .from(posts)
       .where(where)
       .orderBy(desc(posts.createdAt))

@@ -49,7 +49,7 @@ export function createAuth(env: CloudflareEnv) {
           console.log(`[EMAIL VERIFY] User: ${user.email}, URL: ${url}`);
         }
       },
-      sendOnSignUp: false,
+      sendOnSignUp: !!resendKey,
     },
     socialProviders: {
       google: {

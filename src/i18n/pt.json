@@ -13,7 +13,8 @@
     "profile": "Minhas publicações",
     "admin": "Admin",
     "search": "Buscar",
-    "saved": "Salvos"
+    "saved": "Salvos",
+    "settings": "Configurações"
   },
   "categories": {
     "all": "Todas",
@@ -99,6 +100,7 @@
     "loading": "Carregando...",
     "error": "Algo deu errado",
     "empty": "Nenhuma história ainda. Seja o primeiro!",
+    "empty_category": "Nenhuma história nesta categoria. Seja o primeiro a compartilhar!",
     "previous": "Anterior",
     "next": "Próximo",
     "footer_text": "Porque fracassar é normal.",
