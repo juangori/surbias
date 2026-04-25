@@ -25,7 +25,7 @@ const db = getDb(env.DB);
 const userPosts = await db
   .select()
   .from(posts)
-  .where(eq(posts.userId, session.user.id))
+  .where(and(eq(posts.userId, session.user.id), sql`${posts.status} != 'deleted'`))
   .orderBy(desc(posts.createdAt));
 
 const memberSince = new Date(session.user.createdAt ?? Date.now());

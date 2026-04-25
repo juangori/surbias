@@ -25,7 +25,7 @@ const db = getDb(env.DB);
 const result = await db.select(postWithAuthor).from(posts).where(eq(posts.id, postId));
 const post = result[0];
 
-if (!post) {
+if (!post || post.status === 'deleted') {
   return Astro.redirect(localePath(locale, '/'));
 }
 
