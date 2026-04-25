@@ -164,10 +164,18 @@ for (const p of fotwCandidates) {
 
     <!-- Feed -->
     <div class="feed">
-      <!-- Inline post form -->
-      <div class="inline-form-section">
-        <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
-      </div>
+      <!-- Inline post form or login CTA -->
+      {currentUserId ? (
+        <div class="inline-form-section">
+          <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
+        </div>
+      ) : (
+        <div class="inline-form-section login-cta-section">
+          <a href={localePath(locale, '/login')} class="btn-cta" style="display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; padding: 0.9rem 1rem; font-size: 0.95rem;">
+            {i.auth.login_required}
+          </a>
+        </div>
+      )}
 
       {pinnedPosts.length > 0 && (
         <div class="pinned-section" style="margin-bottom: 1.5rem;">

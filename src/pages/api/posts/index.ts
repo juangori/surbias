@@ -7,6 +7,7 @@ import { desc, eq, and, sql } from 'drizzle-orm';
 import { verifyTurnstile } from '../../../lib/turnstile';
 import { checkRateLimit, getIpHash } from '../../../lib/rate-limit';
 import { validatePost, isHoneypotFilled } from '../../../lib/moderation';
+import { createAuth } from '../../../lib/auth';
 
 const POSTS_PER_PAGE = 20;
 
@@ -85,6 +86,14 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request, redirect }) => {
   const db = getDb(env.DB);
 
+  const auth = createAuth(env);
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user) {
+    const reqLocale = new URL(request.url).searchParams.get('locale') || 'en';
+    const prefix = reqLocale === 'en' ? '' : `/${reqLocale}`;
+    return redirect(`${prefix}/login`, 302);
+  }
+
   const formData = await request.formData();
   const title = (formData.get('title') as string)?.trim();
   const body = (formData.get('body') as string)?.trim();
@@ -121,6 +130,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const id = nanoid(12);
   await db.insert(posts).values({
     id,
+    userId: session.user.id,
     title,
     body,
     category,

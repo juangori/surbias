@@ -39,10 +39,14 @@ const isFlagged = post.status === 'flagged';
 
 // Check if current user owns the post
 let isOwner = false;
+let isLoggedIn = false;
 try {
   const auth = createAuth(env);
   const session = await auth.api.getSession({ headers: Astro.request.headers });
-  if (session?.user?.id === post.userId) isOwner = true;
+  if (session?.user) {
+    isLoggedIn = true;
+    if (session.user.id === post.userId) isOwner = true;
+  }
 } catch (err) {
   console.error('Session check failed:', err);
 }
@@ -150,16 +154,24 @@ const relatedPosts = await db
             <h3 class="comments-title">{i.common.comments} ({postComments.length})</h3>
 
             <!-- Comment form -->
-            <div class="comment-form-wrapper">
-              <textarea id="comment-body" placeholder={i.common.write_comment} maxlength="2000" rows="2" class="comment-input"></textarea>
-              <div class="comment-form-footer">
-                <label class="anonymous-toggle">
-                  <input type="checkbox" id="comment-anon" checked class="toggle-checkbox" />
-                  <span class="toggle-label">{i.common.anonymous}</span>
-                </label>
-                <button id="submit-comment" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.85rem;">{i.common.comment}</button>
+            {isLoggedIn ? (
+              <div class="comment-form-wrapper">
+                <textarea id="comment-body" placeholder={i.common.write_comment} maxlength="2000" rows="2" class="comment-input"></textarea>
+                <div class="comment-form-footer">
+                  <label class="anonymous-toggle">
+                    <input type="checkbox" id="comment-anon" checked class="toggle-checkbox" />
+                    <span class="toggle-label">{i.common.anonymous}</span>
+                  </label>
+                  <button id="submit-comment" class="btn-cta" style="padding: 0.5rem 1rem; font-size: 0.85rem;">{i.common.comment}</button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div class="comment-login-cta">
+                <a href={localePath(locale, '/login')} class="btn-cta" style="display: inline-flex; font-size: 0.85rem; padding: 0.5rem 1rem;">
+                  {i.auth.login_required_comment}
+                </a>
+              </div>
+            )}
 
             <!-- Comments list -->
             <div id="comments-list">

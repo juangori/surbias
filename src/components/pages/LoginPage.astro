@@ -31,6 +31,10 @@ const i = t(locale);
 
       <!-- Email / password form -->
       <form id="auth-form">
+        <label for="alias" id="alias-label" style="display: none;">
+          {i.auth.alias}
+          <input type="text" id="alias" name="alias" minlength="2" maxlength="30" placeholder={i.auth.alias_placeholder} />
+        </label>
         <label for="email">
           {i.auth.email}
           <input type="email" id="email" name="email" required />
@@ -82,24 +86,29 @@ const i = t(locale);
   const loginBtn = document.getElementById('login-btn') as HTMLButtonElement;
   const googleBtn = document.getElementById('google-login') as HTMLButtonElement;
   const forgotBtn = document.getElementById('forgot-password') as HTMLAnchorElement;
+  const aliasLabel = document.getElementById('alias-label') as HTMLLabelElement;
+  const aliasInput = document.getElementById('alias') as HTMLInputElement;
 
   toggleBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     isLogin = !isLogin;
     loginBtn.textContent = isLogin ? loginBtn.dataset.loginText! : loginBtn.dataset.registerText!;
     toggleBtn.textContent = isLogin ? toggleBtn.dataset.noAccount! : toggleBtn.dataset.hasAccount!;
+    if (aliasLabel) aliasLabel.style.display = isLogin ? 'none' : '';
+    if (aliasInput) aliasInput.required = !isLogin;
   });
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = (document.getElementById('email') as HTMLInputElement).value;
     const password = (document.getElementById('password') as HTMLInputElement).value;
+    const alias = aliasInput?.value?.trim() || '';
 
     let result;
     try {
       result = isLogin
         ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ email, password, name: email.split('@')[0] });
+        : await authClient.signUp.email({ email, password, name: alias });
     } catch (err) {
       console.error('[auth] request threw:', err);
       window.showToast('Network error: ' + (err as Error).message, 'error');

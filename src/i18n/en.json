@@ -49,9 +49,11 @@
   },
   "auth": {
     "login_title": "Sign in",
-    "login_subtitle": "Optional. You can post without an account.",
+    "login_subtitle": "Sign in to share your stories and comment.",
     "email": "Email",
     "password": "Password",
+    "alias": "Alias",
+    "alias_placeholder": "How others will see you",
     "login_button": "Sign in",
     "register_button": "Create account",
     "or": "or",
@@ -60,7 +62,9 @@
     "has_account": "Already have an account?",
     "forgot_password": "Forgot password?",
     "reset_sent": "Password reset link sent to your email.",
-    "enter_email_reset": "Enter your email to reset your password"
+    "enter_email_reset": "Enter your email to reset your password",
+    "login_required": "Sign in to share your story",
+    "login_required_comment": "Sign in to comment"
   },
   "about": {
     "title": "What is Surbias?",

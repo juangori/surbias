@@ -49,9 +49,11 @@
   },
   "auth": {
     "login_title": "Entrar",
-    "login_subtitle": "Opcional. Você pode publicar sem conta.",
+    "login_subtitle": "Entre para compartilhar suas histórias e comentar.",
     "email": "Email",
     "password": "Senha",
+    "alias": "Apelido",
+    "alias_placeholder": "Como os outros vão te ver",
     "login_button": "Entrar",
     "register_button": "Criar conta",
     "or": "ou",
@@ -60,7 +62,9 @@
     "has_account": "Já tem conta?",
     "forgot_password": "Esqueceu a senha?",
     "reset_sent": "Um link de redefinição de senha foi enviado para o seu email.",
-    "enter_email_reset": "Digite seu email para redefinir sua senha"
+    "enter_email_reset": "Digite seu email para redefinir sua senha",
+    "login_required": "Entre para compartilhar sua história",
+    "login_required_comment": "Entre para comentar"
   },
   "about": {
     "title": "O que é Surbias?",
