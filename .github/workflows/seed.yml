@@ -1,0 +1,59 @@
+name: Seed database
+
+# Manually-triggered workflow to seed (or re-seed) D1 with the synthetic
+# content in scripts/seed/seed.sql. Re-running with mode=replace first wipes
+# everything tagged is_seed=1 so re-applying is safe.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: What to do
+        type: choice
+        required: true
+        default: replace
+        options:
+          - apply        # insert seed.sql (errors if already applied)
+          - replace      # delete existing seed rows, then insert seed.sql
+          - purge        # delete existing seed rows only
+      confirm:
+        description: 'Type "yes" to confirm — this writes to production D1'
+        type: string
+        required: true
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'yes' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Purge existing seed rows
+        if: ${{ github.event.inputs.mode != 'apply' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute surbias-db --remote --command "DELETE FROM posts WHERE is_seed = 1"
+
+      - name: Apply seed.sql
+        if: ${{ github.event.inputs.mode != 'purge' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute surbias-db --remote --file scripts/seed/seed.sql
+
+      - name: Report row counts
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute surbias-db --remote --command "SELECT COUNT(*) AS seed_posts FROM posts WHERE is_seed = 1; SELECT locale, COUNT(*) AS n FROM posts WHERE is_seed = 1 GROUP BY locale;"
