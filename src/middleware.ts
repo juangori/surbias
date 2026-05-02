@@ -30,12 +30,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://tagmanager.google.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://tagmanager.google.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-      "frame-src https://challenges.cloudflare.com",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google-analytics.com https://ssl.gstatic.com https://www.gstatic.com",
+      "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net",
+      "frame-src https://challenges.cloudflare.com https://www.googletagmanager.com",
       "object-src 'none'",
       "base-uri 'self'",
     ].join('; ')
