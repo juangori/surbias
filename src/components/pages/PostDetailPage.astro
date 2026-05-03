@@ -3,9 +3,10 @@ import Base from '../../layouts/Base.astro';
 import ReactionBar from '../../components/ReactionBar.astro';
 import CategoryFilter from '../../components/CategoryFilter.astro';
 import PostCard from '../../components/PostCard.astro';
+import SupportCTA from '../../components/SupportCTA.astro';
 import { getLocaleFromUrl, t, timeAgo, localePath } from '../../i18n';
 import { getDb } from '../../db';
-import { posts, postTags, tags, users, reactions as reactionsTable } from '../../db/schema';
+import { posts, postTags, tags, reactions as reactionsTable } from '../../db/schema';
 import { comments as commentsTable } from '../../db/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
@@ -54,6 +55,18 @@ const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Num
 const reactionCounts = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
 const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
 const isFlagged = post.status === 'flagged';
+
+// Reading time: avg 220 wpm, min 1 min
+const wordCount = post.body.trim().split(/\s+/).length;
+const readingMinutes = Math.max(1, Math.round(wordCount / 220));
+const readingLabels: Record<string, string> = {
+  en: 'min read',
+  es: 'min de lectura',
+  de: 'Min Lesezeit',
+  fr: 'min de lecture',
+  pt: 'min de leitura',
+};
+const readingLabel = readingLabels[locale] || readingLabels.en;
 
 // Check if current user owns the post
 let isOwner = false;
@@ -105,9 +118,54 @@ const relatedPosts = await db
 
 const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
 const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
+
+// JSON-LD for rich search result
+const totalReactions = Object.values(reactionCounts).reduce((a, b) => a + b, 0);
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  mainEntityOfPage: { '@type': 'WebPage', '@id': postFullUrl },
+  headline: post.title.slice(0, 110),
+  description: post.body.slice(0, 200),
+  image: `https://surbias.com/api/og/${post.id}`,
+  datePublished: createdAt.toISOString(),
+  dateModified: createdAt.toISOString(),
+  author: {
+    '@type': 'Person',
+    name: post.isAnonymous ? 'Anonymous' : (post.userName || 'Anonymous'),
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Surbias',
+    logo: { '@type': 'ImageObject', url: 'https://surbias.com/logo.png' },
+  },
+  articleSection: categoryLabel,
+  inLanguage: locale,
+  interactionStatistic: [
+    { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: totalReactions },
+    { '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction', userInteractionCount: postComments.length },
+  ],
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Surbias', item: `https://surbias.com${localePath(locale, '/')}` },
+    { '@type': 'ListItem', position: 2, name: categoryLabel, item: `https://surbias.com${localePath(locale, '/')}?category=${post.category}` },
+    { '@type': 'ListItem', position: 3, name: post.title.slice(0, 80), item: postFullUrl },
+  ],
+};
 ---
 
-<Base title={post.title} description={post.body.slice(0, 160) + '...'} ogImage={`https://surbias.com/api/og/${post.id}`}>
+<Base
+  title={post.title}
+  description={post.body.slice(0, 160) + (post.body.length > 160 ? '…' : '')}
+  ogImage={`https://surbias.com/api/og/${post.id}`}
+  ogType="article"
+  publishedTime={createdAt.toISOString()}
+  jsonLd={[articleJsonLd, breadcrumbJsonLd]}
+>
   <!-- Back navigation -->
   <div style="margin-bottom: 1.5rem;">
     <a href={localePath(locale, '/')} class="back-nav">
@@ -144,6 +202,8 @@ const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
             </span>
             <span class="post-meta-sep">&bull;</span>
             <span>{timeAgo(createdAt, locale)}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span title={`${wordCount} words`}>📖 {readingMinutes} {readingLabel}</span>
           </div>
 
           <!-- Title -->
@@ -164,10 +224,19 @@ const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
           <!-- Reactions -->
           <ReactionBar locale={locale} postId={post.id} reactionCounts={reactionCounts} />
 
-          <!-- Share buttons -->
-          <div class="share-buttons" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">Share on X</a>
-            <a href={`https://wa.me/?text=${encodeURIComponent(post.title + ' - ' + postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
+          <!-- Share button (opens bottom-sheet with all networks) -->
+          <div class="share-buttons" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+            <button
+              type="button"
+              class="share-btn"
+              data-share-card
+              data-post-url={postFullUrl}
+              data-post-title={post.title}
+              style="display:inline-flex;align-items:center;gap:0.4rem;cursor:pointer;font-family:inherit;background:var(--surbias-warm-light);"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
+            </button>
             <a href={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(postFullUrl)}`} target="_blank" rel="noopener" class="share-btn">QR Code</a>
           </div>
 
@@ -229,6 +298,11 @@ const postFullUrl = `https://surbias.com${localePath(locale, postPath)}`;
                 Delete my post
               </button>
             )}
+          </div>
+
+          <!-- Support CTA after the story (high-intent moment) -->
+          <div style="margin-top: 2rem;">
+            <SupportCTA locale={locale} variant="card" />
           </div>
 
           <!-- Related posts -->

@@ -1,0 +1,221 @@
+---
+import { t, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  variant?: 'inline' | 'card' | 'banner';
+}
+
+const { locale, variant = 'inline' } = Astro.props;
+const i = t(locale);
+
+const headlines: Record<Locale, string> = {
+  en: 'Liked this story? Help keep Surbias free.',
+  es: '¿Te llegó esta historia? Ayudanos a mantener Surbias gratis.',
+  de: 'Diese Geschichte berührt? Hilf uns, Surbias kostenlos zu halten.',
+  fr: 'Cette histoire t’a parlé ? Aide-nous à garder Surbias gratuit.',
+  pt: 'Essa história te tocou? Ajuda a manter o Surbias gratuito.',
+};
+
+const subtext: Record<Locale, string> = {
+  en: 'No ads. No trackers. No paywall. Just stories — funded by readers like you.',
+  es: 'Sin ads. Sin trackers. Sin paywall. Solo historias — financiado por lectores como vos.',
+  de: 'Keine Ads. Kein Tracking. Keine Paywall. Nur Geschichten — finanziert von Leser:innen wie dir.',
+  fr: 'Pas de pub. Pas de tracker. Pas de paywall. Juste des histoires — financé par des lecteurs comme toi.',
+  pt: 'Sem anúncios. Sem trackers. Sem paywall. Só histórias — financiado por leitores como você.',
+};
+
+const cta: Record<Locale, string> = {
+  en: 'Buy us a coffee — $3',
+  es: 'Invitanos un café — US$3',
+  de: 'Spendier uns einen Kaffee — 3 $',
+  fr: 'Offre-nous un café — 3 $',
+  pt: 'Paga um café — US$ 3',
+};
+
+const headline = headlines[locale] || headlines.en;
+const sub = subtext[locale] || subtext.en;
+const ctaLabel = cta[locale] || cta.en;
+---
+
+{variant === 'card' && (
+  <aside class="support-cta support-cta--card" aria-label="Support Surbias">
+    <div class="support-cta-icon" aria-hidden="true">☕</div>
+    <div class="support-cta-body">
+      <p class="support-cta-headline">{headline}</p>
+      <p class="support-cta-sub">{sub}</p>
+    </div>
+    <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-cta-btn">
+      {ctaLabel}
+    </a>
+  </aside>
+)}
+
+{variant === 'inline' && (
+  <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-cta support-cta--inline">
+    <span class="support-cta-icon" aria-hidden="true">☕</span>
+    <span>
+      <strong>{headline}</strong>
+      <span class="support-cta-sub-inline">{sub}</span>
+    </span>
+    <span class="support-cta-arrow" aria-hidden="true">→</span>
+  </a>
+)}
+
+{variant === 'banner' && (
+  <div class="support-banner" id="support-banner" role="region" aria-label="Support Surbias">
+    <span class="support-banner-text">
+      <span aria-hidden="true">☕</span>
+      <span><strong>Surbias is free, ad-free, tracker-free.</strong> If it brings you value, <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener">buy us a coffee</a>.</span>
+    </span>
+    <button class="support-banner-close" aria-label="Dismiss" data-support-dismiss>×</button>
+  </div>
+)}
+
+<style>
+  .support-cta {
+    --accent: var(--surbias-warm);
+    --accent-bg: #fff8e1;
+    --accent-text: #92600a;
+  }
+
+  .support-cta--card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #fff8e1 0%, #fff3c8 100%);
+    border: 1.5px solid #f0d080;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  [data-theme="dark"] .support-cta--card {
+    background: linear-gradient(135deg, #2a2415 0%, #2f2818 100%);
+    border-color: #5a4a20;
+  }
+  .support-cta-icon {
+    font-size: 2.25rem;
+    flex-shrink: 0;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(184,134,11,0.3));
+  }
+  .support-cta-body { flex: 1; min-width: 0; }
+  .support-cta-headline {
+    margin: 0 0 0.2rem;
+    font-weight: 700;
+    color: var(--surbias-text);
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+  .support-cta-sub {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--surbias-text-muted);
+    line-height: 1.5;
+  }
+  .support-cta-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.2rem;
+    background: var(--surbias-warm);
+    color: #fff !important;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 14px rgba(184,134,11,0.35);
+    transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
+    white-space: nowrap;
+  }
+  .support-cta-btn:hover {
+    transform: translateY(-2px);
+    background: #c8941b;
+    box-shadow: 0 6px 18px rgba(184,134,11,0.5);
+  }
+
+  .support-cta--inline {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    background: var(--surbias-warm-light);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--surbias-text);
+    font-size: 0.88rem;
+    transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .support-cta--inline:hover {
+    background: var(--surbias-warm-tint);
+    border-color: var(--surbias-warm);
+    transform: translateY(-1px);
+    color: var(--surbias-text);
+  }
+  .support-cta--inline strong { display: block; line-height: 1.35; }
+  .support-cta-sub-inline {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--surbias-text-muted);
+    margin-top: 2px;
+  }
+  .support-cta--inline .support-cta-icon { font-size: 1.6rem; }
+  .support-cta-arrow {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--surbias-warm);
+  }
+
+  .support-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+    background: linear-gradient(90deg, #fff8e1 0%, #fff3c8 100%);
+    border-bottom: 1px solid #e8d090;
+    font-size: 0.82rem;
+  }
+  [data-theme="dark"] .support-banner {
+    background: #2a2415;
+    border-color: #5a4a20;
+  }
+  .support-banner.is-hidden { display: none; }
+  .support-banner-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #5e4408;
+  }
+  [data-theme="dark"] .support-banner-text { color: var(--surbias-text); }
+  .support-banner a {
+    color: #92600a;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  [data-theme="dark"] .support-banner a { color: var(--surbias-warm); }
+  .support-banner-close {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: #92600a;
+    cursor: pointer;
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+  .support-banner-close:hover { background: rgba(146,96,10,0.12); }
+
+  @media (max-width: 640px) {
+    .support-cta--card {
+      flex-direction: column;
+      text-align: center;
+      padding: 1rem;
+    }
+    .support-cta-btn { width: 100%; justify-content: center; }
+    .support-banner-text { font-size: 0.78rem; }
+  }
+</style>

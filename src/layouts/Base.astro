@@ -1,6 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import MobileTabBar from '../components/MobileTabBar.astro';
 import { getLocaleFromUrl, t } from '../i18n';
 import { createAuth } from '../lib/auth';
 import { env } from 'cloudflare:workers';
@@ -9,11 +10,14 @@ interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  ogType?: string;
+  publishedTime?: string;
+  jsonLd?: Record<string, any> | Array<Record<string, any>>;
 }
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
-const { title = i.site.title, description = i.site.description, ogImage } = Astro.props;
+const { title = i.site.title, description = i.site.description, ogImage, ogType = 'website', publishedTime, jsonLd } = Astro.props;
 
 let currentUser: { id: string; name?: string | null; email: string } | null = null;
 try {
@@ -49,17 +53,19 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     <link rel="canonical" href={canonicalURL} />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Surbias" />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
 
     <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage || 'https://surbias.com/logo.png'} />
+    <meta name="twitter:site" content="@surbias" />
 
     <!-- Additional SEO -->
     <meta name="theme-color" content="#4a7c59" />
@@ -96,6 +102,25 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
 
     <!-- Global styles -->
     <link rel="stylesheet" href="/styles/global.css" />
+
+    <!-- Site-wide JSON-LD -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Surbias',
+      url: 'https://surbias.com',
+      description: i.site.description,
+      inLanguage: locale,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://surbias.com/search?q={search_term_string}',
+        'query-input': 'required name=search_term_string',
+      },
+    })}></script>
+
+    {jsonLd && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)}></script>
+    )}
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->
@@ -103,11 +128,65 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <a href="#main-content" class="skip-link">Skip to content</a>
+    <div class="reading-progress" id="reading-progress" aria-hidden="true"></div>
+    <div class="support-banner is-hidden" id="support-banner" role="region" aria-label="Support Surbias">
+      <span class="support-banner-text">
+        <span aria-hidden="true">☕</span>
+        <span>Surbias is free, ad-free and tracker-free. <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener">Help keep it that way →</a></span>
+      </span>
+      <button class="support-banner-close" aria-label="Dismiss" data-support-dismiss type="button">×</button>
+    </div>
     <Header locale={locale} user={currentUser} />
     <main class="container" id="main-content">
       <slot />
     </main>
     <Footer locale={locale} />
+    <MobileTabBar locale={locale} isLoggedIn={!!currentUser} currentPath={Astro.url.pathname} />
+    <button class="scroll-top-btn" id="scroll-top-btn" aria-label="Back to top" type="button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+    </button>
+    <!-- Share bottom sheet -->
+    <div class="share-sheet" id="share-sheet" role="dialog" aria-modal="true" aria-label="Share">
+      <div class="share-sheet-inner">
+        <div class="share-sheet-handle"></div>
+        <p class="share-sheet-title">Share this story</p>
+        <div class="share-sheet-grid">
+          <a class="share-sheet-item" data-share-net="twitter" target="_blank" rel="noopener">
+            <span class="share-sheet-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>
+            X
+          </a>
+          <a class="share-sheet-item" data-share-net="whatsapp" target="_blank" rel="noopener">
+            <span class="share-sheet-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886a9.86 9.86 0 0 0 1.524 5.298l.376.6-1.022 3.733z"/></svg></span>
+            WhatsApp
+          </a>
+          <a class="share-sheet-item" data-share-net="telegram" target="_blank" rel="noopener">
+            <span class="share-sheet-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></span>
+            Telegram
+          </a>
+          <a class="share-sheet-item" data-share-net="linkedin" target="_blank" rel="noopener">
+            <span class="share-sheet-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 0H5a5 5 0 0 0-5 5v14a5 5 0 0 0 5 5h14a5 5 0 0 0 5-5V5a5 5 0 0 0-5-5zM8 19H5V8h3zM6.5 6.732c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zM20 19h-3v-5.604c0-3.368-4-3.113-4 0V19h-3V8h3v1.765c1.396-2.586 7-2.777 7 2.476z"/></svg></span>
+            LinkedIn
+          </a>
+          <a class="share-sheet-item" data-share-net="reddit" target="_blank" rel="noopener">
+            <span class="share-sheet-item-icon">🟠</span>
+            Reddit
+          </a>
+          <a class="share-sheet-item" data-share-net="email">
+            <span class="share-sheet-item-icon">✉️</span>
+            Email
+          </a>
+          <button class="share-sheet-item" data-share-copy type="button">
+            <span class="share-sheet-item-icon">🔗</span>
+            Copy
+          </button>
+          <button class="share-sheet-item" type="button" onclick="document.getElementById('share-sheet').classList.remove('is-open')">
+            <span class="share-sheet-item-icon">✕</span>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Global modal + toast -->
     <div class="modal-overlay" id="global-modal">
       <div class="modal-box">
@@ -151,6 +230,51 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
           });
       });
 
+      // Share button (delegated, opens share sheet). Works on cards or standalone buttons.
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-share-card]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var card = btn.closest('[data-post-card]');
+        var url = btn.dataset.postUrl || (card && card.dataset.postUrl) || window.location.href;
+        var title = btn.dataset.postTitle || (card && card.dataset.postTitle) || document.title;
+        window.openShareSheet({ url: url, title: title });
+      });
+
+      // Inline reactions on post cards (delegated)
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.post-card .reaction-btn[data-reaction]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var postId = btn.dataset.postId;
+        var type = btn.dataset.reaction;
+        if (!postId || !type) return;
+        var bar = btn.closest('.reaction-bar');
+        // Optimistic feedback
+        btn.classList.add('reaction-bump');
+        setTimeout(function() { btn.classList.remove('reaction-bump'); }, 350);
+        fetch('/api/posts/' + postId + '/react', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: type }),
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (!data || !data.reactionCounts) return;
+            if (bar) {
+              bar.querySelectorAll('.reaction-btn[data-reaction]').forEach(function(b) {
+                var rt = b.dataset.reaction;
+                var c = b.querySelector('.reaction-count');
+                if (rt && c) c.textContent = String(data.reactionCounts[rt] || 0);
+              });
+            }
+            btn.classList.add('reacted');
+          })
+          .catch(function() { window.showToast && window.showToast('Could not react.', 'error'); });
+      });
+
       // Bookmark toggle handler (delegated)
       document.addEventListener('click', function(e) {
         var btn = e.target.closest('.bookmark-btn');
@@ -192,27 +316,190 @@ const pageTitle = title === i.site.title ? `${i.site.title} — ${i.site.tagline
       }
     </script>
     <script is:inline>
-      // Dark mode toggle
+      // Theme cycler: auto (system) → light → dark → auto
       (function() {
-        var theme = localStorage.getItem('theme') || 'light';
-        if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-
+        var saved = localStorage.getItem('theme') || 'auto';
+        var mql = window.matchMedia('(prefers-color-scheme: dark)');
+        function apply(mode) {
+          var resolved = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
+          if (resolved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+          else document.documentElement.removeAttribute('data-theme');
+          var btn = document.getElementById('theme-toggle');
+          if (btn) {
+            btn.textContent = mode === 'auto' ? '🌓' : (mode === 'dark' ? '☀️' : '🌙');
+            btn.setAttribute('aria-label', 'Theme: ' + mode + ' (click to cycle)');
+            btn.title = 'Theme: ' + mode;
+          }
+        }
+        apply(saved);
+        // React to system theme changes when in auto mode
+        if (mql.addEventListener) {
+          mql.addEventListener('change', function() {
+            if ((localStorage.getItem('theme') || 'auto') === 'auto') apply('auto');
+          });
+        }
         document.addEventListener('click', function(e) {
           if (e.target && e.target.id === 'theme-toggle') {
-            var current = document.documentElement.getAttribute('data-theme');
-            var next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next === 'dark' ? 'dark' : '');
+            var current = localStorage.getItem('theme') || 'auto';
+            var next = current === 'auto' ? 'light' : (current === 'light' ? 'dark' : 'auto');
             localStorage.setItem('theme', next);
-            e.target.textContent = next === 'dark' ? '☀️' : '🌙';
+            apply(next);
           }
         });
-
-        // Set initial icon
-        var btn = document.getElementById('theme-toggle');
-        if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
       })();
     </script>
     <script is:inline>
+      // Exit-intent newsletter prompt (desktop only, once per visitor every 60 days)
+      (function() {
+        try {
+          var seen = parseInt(localStorage.getItem('surbias_exit_seen') || '0', 10);
+          if (seen && Date.now() - seen < 60 * 86400 * 1000) return;
+          if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return; // skip mobile
+          var triggered = false;
+          function trigger() {
+            if (triggered) return;
+            triggered = true;
+            try { localStorage.setItem('surbias_exit_seen', String(Date.now())); } catch(_){}
+            if (!window.showModal) return;
+            var lang = document.documentElement.lang || 'en';
+            var labels = {
+              en: { title: 'Before you go…', body: 'One email a week. The most-reacted failure stories. Zero ads, zero spam, unsubscribe in one click.', cta: 'Subscribe', cancel: 'No thanks', placeholder: 'your@email.com' },
+              es: { title: 'Antes de irte…', body: 'Un email por semana. Las historias de fracaso con más reacciones. Cero ads, cero spam, te desuscribís en un click.', cta: 'Suscribirme', cancel: 'No, gracias', placeholder: 'tu@email.com' },
+              de: { title: 'Bevor du gehst…', body: 'Eine E-Mail pro Woche. Die meistreagierten Geschichten. Keine Werbung, kein Spam, jederzeit kündbar.', cta: 'Abonnieren', cancel: 'Nein danke', placeholder: 'deine@email.com' },
+              fr: { title: 'Avant de partir…', body: 'Un email par semaine. Les histoires les plus réagies. Zéro pub, zéro spam, désabonnement en un clic.', cta: 'S’abonner', cancel: 'Non merci', placeholder: 'ton@email.com' },
+              pt: { title: 'Antes de sair…', body: 'Um email por semana. As histórias mais reagidas. Zero ads, zero spam, descadastro em um clique.', cta: 'Assinar', cancel: 'Não, obrigado', placeholder: 'seu@email.com' },
+            };
+            var L = labels[lang] || labels.en;
+            window.showModal({
+              title: L.title,
+              html: '<p style="margin:0 0 12px;color:#556b5c;line-height:1.55;">' + L.body + '</p>'
+                + '<input type="email" id="exit-email" placeholder="' + L.placeholder + '" autocomplete="email" style="width:100%;padding:0.6rem 0.85rem;border:1px solid #d4e3d9;border-radius:8px;font-family:inherit;font-size:0.95rem;">',
+              buttons: [
+                { text: L.cancel, class: '' },
+                { text: L.cta, class: 'modal-btn-primary', onClick: function() {
+                  var input = document.getElementById('exit-email');
+                  if (!input) return;
+                  var email = (input.value || '').trim();
+                  if (!email || email.indexOf('@') === -1) {
+                    window.showToast && window.showToast('Enter a valid email.', 'error');
+                    return;
+                  }
+                  fetch('/api/newsletter/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, locale: lang })
+                  }).then(function(r){return r.json()}).then(function(d){
+                    if (d && d.subscribed) window.showToast && window.showToast('Subscribed! ☕', 'success');
+                    else window.showToast && window.showToast(d.error || 'Could not subscribe.', 'error');
+                  }).catch(function(){ window.showToast && window.showToast('Could not subscribe.', 'error'); });
+                }}
+              ]
+            });
+          }
+          // Trigger when mouse leaves toward the top (only if user has been on page > 15s)
+          var loaded = Date.now();
+          document.addEventListener('mouseout', function(e){
+            if (Date.now() - loaded < 15000) return;
+            if (e.clientY < 5 && !e.relatedTarget) trigger();
+          });
+        } catch(_){}
+      })();
+
+      // GTM/GA4 event tracking — bubbles named events through dataLayer
+      (function() {
+        window.dataLayer = window.dataLayer || [];
+        function track(name, params) {
+          try { window.dataLayer.push(Object.assign({ event: name }, params || {})); } catch(_){}
+        }
+        // Donation clicks (any link to ko-fi.com or /support)
+        document.addEventListener('click', function(e) {
+          var a = e.target.closest && e.target.closest('a');
+          if (!a) return;
+          var href = a.getAttribute('href') || '';
+          if (href.indexOf('ko-fi.com') !== -1) track('donate_click', { destination: 'ko-fi', source: a.className || 'link' });
+          else if (href === '/support' || href.indexOf('/support') === 0) track('donate_intent', { source: a.className || 'link' });
+          if (a.matches('[data-share-card], [data-share-net]')) track('share_click', { network: a.getAttribute('data-share-net') || 'sheet' });
+        });
+        // Reaction clicks
+        document.addEventListener('click', function(e) {
+          var btn = e.target.closest && e.target.closest('.reaction-btn[data-reaction]');
+          if (btn) track('react', { type: btn.getAttribute('data-reaction') });
+        });
+      })();
+
+      // Lightweight support banner — show after 3 visits, hide for 30 days when dismissed
+      (function() {
+        try {
+          var visits = parseInt(localStorage.getItem('surbias_visits') || '0', 10) + 1;
+          localStorage.setItem('surbias_visits', String(visits));
+          var dismissedAt = parseInt(localStorage.getItem('surbias_support_dismissed') || '0', 10);
+          var dismissedRecently = dismissedAt && (Date.now() - dismissedAt) < 30 * 24 * 60 * 60 * 1000;
+          var banner = document.getElementById('support-banner');
+          if (banner && visits >= 3 && !dismissedRecently) {
+            banner.classList.remove('is-hidden');
+          }
+          var btn = banner && banner.querySelector('[data-support-dismiss]');
+          if (btn) btn.addEventListener('click', function() {
+            banner.classList.add('is-hidden');
+            try { localStorage.setItem('surbias_support_dismissed', String(Date.now())); } catch (_) {}
+          });
+        } catch (_) {}
+      })();
+
+      // Reading progress + scroll-to-top
+      (function() {
+        var progress = document.getElementById('reading-progress');
+        var topBtn = document.getElementById('scroll-top-btn');
+        var article = document.querySelector('.post-detail-card');
+        function update() {
+          var y = window.scrollY || window.pageYOffset || 0;
+          if (progress && article) {
+            var rect = article.getBoundingClientRect();
+            var start = rect.top + y - 120;
+            var end = start + article.offsetHeight - window.innerHeight + 120;
+            var pct = Math.max(0, Math.min(1, (y - start) / Math.max(1, end - start)));
+            progress.style.width = (pct * 100) + '%';
+          } else if (progress) {
+            progress.style.width = '0%';
+          }
+          if (topBtn) topBtn.classList.toggle('is-visible', y > 480);
+        }
+        if (topBtn) topBtn.addEventListener('click', function() {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+      })();
+
+      // Global share helper (uses Web Share API if available, else opens sheet)
+      window.openShareSheet = function(payload) {
+        if (navigator.share && payload && payload.url) {
+          navigator.share({ title: payload.title || 'Surbias', text: payload.text || '', url: payload.url }).catch(function() {});
+          return;
+        }
+        var sheet = document.getElementById('share-sheet');
+        if (!sheet) return;
+        var u = encodeURIComponent(payload.url);
+        var t = encodeURIComponent(payload.title || '');
+        sheet.querySelectorAll('[data-share-net]').forEach(function(a) {
+          var net = a.getAttribute('data-share-net');
+          if (net === 'twitter') a.setAttribute('href', 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u);
+          if (net === 'whatsapp') a.setAttribute('href', 'https://wa.me/?text=' + t + '%20' + u);
+          if (net === 'linkedin') a.setAttribute('href', 'https://www.linkedin.com/sharing/share-offsite/?url=' + u);
+          if (net === 'telegram') a.setAttribute('href', 'https://t.me/share/url?url=' + u + '&text=' + t);
+          if (net === 'reddit') a.setAttribute('href', 'https://www.reddit.com/submit?url=' + u + '&title=' + t);
+          if (net === 'email') a.setAttribute('href', 'mailto:?subject=' + t + '&body=' + u);
+        });
+        var copyBtn = sheet.querySelector('[data-share-copy]');
+        if (copyBtn) copyBtn.onclick = function() {
+          navigator.clipboard && navigator.clipboard.writeText(payload.url);
+          window.showToast('Link copied!', 'success');
+          sheet.classList.remove('is-open');
+        };
+        sheet.classList.add('is-open');
+        sheet.onclick = function(e) { if (e.target === sheet) sheet.classList.remove('is-open'); };
+      };
+
       window.showModal = function(opts) {
         const overlay = document.getElementById('global-modal');
         document.getElementById('modal-title').textContent = opts.title || '';

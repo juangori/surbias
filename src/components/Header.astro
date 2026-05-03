@@ -1,7 +1,7 @@
 ---
 import { t, localePath, type Locale } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import { Menu, X, House, Info, LogIn, User, FileText, Search, Bookmark, Settings } from '@lucide/astro';
+import { Menu, X, House, Info, LogIn, User, FileText, Search, Bookmark, Settings, Bell } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
@@ -70,13 +70,30 @@ const i = t(locale);
       <li class="nav-lang">
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>
+      {user && (
+        <li class="nav-bell-wrap">
+          <button class="nav-bell" id="nav-bell" aria-label="Notifications" type="button">
+            <Bell size={16} aria-hidden="true" />
+            <span class="nav-bell-badge" id="nav-bell-badge" hidden>0</span>
+          </button>
+          <div class="notif-dropdown" id="notif-dropdown" hidden role="dialog" aria-label="Notifications">
+            <div class="notif-dropdown-header">
+              <span>Notifications</span>
+              <button type="button" data-notif-mark-read class="notif-mark-read">Mark all read</button>
+            </div>
+            <div class="notif-dropdown-list" id="notif-dropdown-list">
+              <p class="notif-empty">Nothing yet. When someone reacts to or comments on your stories, you'll see it here.</p>
+            </div>
+          </div>
+        </li>
+      )}
       <li>
         <button class="nav-link nav-link--subtle" id="theme-toggle" aria-label="Toggle dark mode" style="background:none;border:none;cursor:pointer;font-family:inherit;">
           🌙
         </button>
       </li>
       <li>
-        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="nav-coffee">☕ {i.common.footer_coffee}</a>
+        <a href={localePath(locale, '/support')} class="nav-coffee">☕ {i.common.footer_coffee}</a>
       </li>
     </ul>
 
@@ -146,11 +163,123 @@ const i = t(locale);
         <LanguageSwitcher locale={locale} currentPath={Astro.url.pathname} />
       </li>
       <li>
-        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="nav-coffee">☕ {i.common.footer_coffee}</a>
+        <a href={localePath(locale, '/support')} class="nav-coffee">☕ {i.common.footer_coffee}</a>
       </li>
     </ul>
   </div>
 </header>
+
+<script>
+  // Notifications: poll every 60s, show badge with unread count
+  (() => {
+    const bell = document.getElementById('nav-bell');
+    if (!bell) return; // not logged in
+    const dropdown = document.getElementById('notif-dropdown')!;
+    const list = document.getElementById('notif-dropdown-list')!;
+    const badge = document.getElementById('nav-bell-badge')!;
+    if (!dropdown || !list || !badge) return;
+
+    function getLastSeen(): number {
+      const v = parseInt(localStorage.getItem('surbias_notif_seen') || '0', 10);
+      return v || Math.floor(Date.now() / 1000) - 30 * 86400;
+    }
+    function setLastSeen(ts: number) {
+      try { localStorage.setItem('surbias_notif_seen', String(ts)); } catch (_) {}
+    }
+    function timeAgo(ts: number): string {
+      const sec = Math.floor(Date.now() / 1000) - ts;
+      if (sec < 60) return 'just now';
+      if (sec < 3600) return Math.floor(sec / 60) + 'm';
+      if (sec < 86400) return Math.floor(sec / 3600) + 'h';
+      if (sec < 2592000) return Math.floor(sec / 86400) + 'd';
+      return Math.floor(sec / 2592000) + 'mo';
+    }
+    function escapeHtml(s: string): string {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+    }
+
+    interface NotifItem {
+      type: 'reaction' | 'comment';
+      id: string;
+      reactionType?: string;
+      body?: string;
+      actor?: string;
+      postId: string;
+      postSlug: string | null;
+      postTitle: string;
+      createdAt: number;
+    }
+
+    function renderItem(it: NotifItem): string {
+      const path = it.postSlug ? `/post/${it.postSlug}-${it.postId}` : `/post/${it.postId}`;
+      const lang = document.documentElement.lang || 'en';
+      const localePrefix = lang === 'en' ? '' : `/${lang}`;
+      const url = localePrefix + path;
+      const reactionEmojis: Record<string, string> = { metoo: '🤝', hug: '🫂', strength: '💪', respect: '🙇', solidarity: '✊' };
+      if (it.type === 'reaction') {
+        const emoji = reactionEmojis[it.reactionType || 'metoo'] || '💚';
+        return `<a href="${url}" class="notif-item">
+          <span class="notif-item-icon">${emoji}</span>
+          <span class="notif-item-body">
+            <span class="notif-item-title">Someone reacted to "${escapeHtml(it.postTitle)}"</span>
+            <span class="notif-item-meta">${escapeHtml(it.reactionType || '')} · ${timeAgo(it.createdAt)}</span>
+          </span>
+        </a>`;
+      }
+      return `<a href="${url}" class="notif-item">
+        <span class="notif-item-icon">💬</span>
+        <span class="notif-item-body">
+          <span class="notif-item-title">${escapeHtml(it.actor || 'Someone')} commented on "${escapeHtml(it.postTitle)}"</span>
+          <span class="notif-item-meta">${escapeHtml(it.body || '')} · ${timeAgo(it.createdAt)}</span>
+        </span>
+      </a>`;
+    }
+
+    let latest: NotifItem[] = [];
+    async function fetchNotifications() {
+      try {
+        const since = getLastSeen();
+        const res = await fetch(`/api/notifications?since=${since}`);
+        if (!res.ok) return;
+        const data = await res.json() as { items: NotifItem[]; unread: number };
+        latest = data.items || [];
+        if (data.unread > 0) {
+          badge.textContent = data.unread > 9 ? '9+' : String(data.unread);
+          badge.hidden = false;
+        } else {
+          badge.hidden = true;
+        }
+      } catch (_) {}
+    }
+
+    bell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      dropdown.hidden = isOpen;
+      if (!isOpen) {
+        list.innerHTML = latest.length
+          ? latest.map(renderItem).join('')
+          : '<p class="notif-empty">Nothing yet. When someone reacts to or comments on your stories, you\'ll see it here.</p>';
+        // mark seen on open
+        if (latest.length) setLastSeen(Math.floor(Date.now() / 1000));
+        badge.hidden = true;
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (dropdown.hidden) return;
+      const t = e.target as Element;
+      if (!dropdown.contains(t) && !bell.contains(t)) dropdown.hidden = true;
+    });
+    document.querySelector('[data-notif-mark-read]')?.addEventListener('click', () => {
+      setLastSeen(Math.floor(Date.now() / 1000));
+      badge.hidden = true;
+      window.showToast?.('All notifications marked as read.', 'success');
+    });
+
+    fetchNotifications();
+    setInterval(fetchNotifications, 60_000);
+  })();
+</script>
 
 <script>
   document.querySelectorAll('[data-logout]').forEach(btn => {
@@ -312,20 +441,156 @@ const i = t(locale);
     align-items: center;
   }
 
-  /* Buy us a coffee button */
+  /* Bell + notifications dropdown */
+  .nav-bell-wrap {
+    position: relative;
+  }
+  .nav-bell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--surbias-text-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    position: relative;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-bell:hover { color: var(--surbias-text); background: var(--surbias-warm-light); }
+  .nav-bell-badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--surbias-danger);
+    color: #fff;
+    border-radius: 9999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border: 1.5px solid var(--surbias-header-bg);
+  }
+  .notif-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 360px;
+    max-width: calc(100vw - 1rem);
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 250;
+    overflow: hidden;
+  }
+  .notif-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--surbias-text);
+  }
+  .notif-mark-read {
+    background: transparent;
+    border: none;
+    color: var(--surbias-primary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .notif-mark-read:hover { text-decoration: underline; }
+  .notif-dropdown-list {
+    max-height: 380px;
+    overflow-y: auto;
+  }
+  .notif-empty {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--surbias-text-muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .notif-item {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    text-decoration: none;
+    color: var(--surbias-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    transition: background 0.12s;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:hover { background: var(--surbias-warm-light); }
+  .notif-item-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surbias-warm-light);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+  }
+  .notif-item-body { flex: 1; min-width: 0; }
+  .notif-item-title {
+    font-weight: 600;
+    color: var(--surbias-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .notif-item-meta {
+    font-size: 0.74rem;
+    color: var(--surbias-text-muted);
+    margin-top: 2px;
+  }
+
+  @media (max-width: 700px) {
+    .notif-dropdown {
+      position: fixed;
+      top: 60px;
+      right: 0.5rem;
+      left: 0.5rem;
+      width: auto;
+    }
+  }
+
+  /* Buy us a coffee button — visible & inviting, but not loud */
   .nav-coffee {
     font-size: 0.8rem;
-    padding: 5px 10px;
-    background: var(--surbias-warm-light);
-    color: var(--surbias-warm);
-    border-radius: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffe9a8 100%);
+    color: #92600a;
+    border: 1px solid #f0d080;
+    border-radius: 9999px;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 700;
     white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(184,134,11,0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
 
   .nav-coffee:hover {
-    background: var(--surbias-warm-tint);
+    background: linear-gradient(135deg, #ffefb3 0%, #ffdf85 100%);
+    color: #6e4906;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(184,134,11,0.28);
   }
 
   /* Mobile controls (CTA + hamburger) */

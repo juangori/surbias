@@ -1,10 +1,102 @@
 ---
 import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import { getDb } from '../db';
+import { posts } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { postWithAuthor } from '../lib/post-query';
+
+const db = getDb(env.DB);
+let randomPosts: any[] = [];
+try {
+  randomPosts = await db.select(postWithAuthor).from(posts)
+    .where(eq(posts.status, 'published'))
+    .orderBy(sql`RANDOM()`)
+    .limit(3);
+} catch (_) { /* DB might not be available; fail gracefully */ }
 ---
-<Base title="Page not found">
-  <div style="text-align: center; padding: 4rem 1rem;">
-    <h1 style="font-size: 4rem; margin-bottom: 0.5rem; color: var(--surbias-text-light);">404</h1>
-    <p style="font-size: 1.2rem; color: var(--surbias-text-muted); margin-bottom: 2rem;">This page doesn't exist.</p>
-    <a href="/" class="btn-cta">Go home</a>
+
+<Base title="Page not found" description="The page you're looking for doesn't exist. Here are some failure stories instead.">
+  <div class="not-found">
+    <p class="not-found-eyebrow">404</p>
+    <h1>This page doesn't exist.</h1>
+    <p class="not-found-sub">Fittingly, things not working is kind of the point of this site. Here are some real failure stories while you're here.</p>
+
+    <div class="not-found-actions">
+      <a href="/" class="btn-cta">Go home</a>
+      <a href="/random" class="not-found-link">🎲 Random story</a>
+      <a href="/top" class="not-found-link">🏆 Top stories</a>
+      <a href="/search" class="not-found-link">🔍 Search</a>
+    </div>
+
+    {randomPosts.length > 0 && (
+      <div class="not-found-stories">
+        <p class="not-found-stories-label">Three random stories:</p>
+        <div class="posts-grid">
+          {randomPosts.map((p) => <PostCard locale="en" post={p} />)}
+        </div>
+      </div>
+    )}
   </div>
 </Base>
+
+<style>
+  .not-found {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2.5rem 1rem 3rem;
+    text-align: center;
+  }
+  .not-found-eyebrow {
+    font-size: 5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin: 0;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--surbias-primary), var(--surbias-warm));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .not-found h1 {
+    font-size: clamp(1.4rem, 4vw, 1.85rem);
+    font-weight: 800;
+    margin: 0.25rem 0 0.75rem;
+  }
+  .not-found-sub {
+    color: var(--surbias-text-muted);
+    margin: 0 auto 1.75rem;
+    max-width: 480px;
+    line-height: 1.65;
+  }
+  .not-found-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+  .not-found-link {
+    color: var(--surbias-primary);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid var(--surbias-border);
+    background: var(--surbias-card-bg);
+    font-size: 0.88rem;
+  }
+  .not-found-link:hover { border-color: var(--surbias-primary); background: var(--surbias-warm-light); }
+
+  .not-found-stories { text-align: left; }
+  .not-found-stories-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--surbias-text-muted);
+    font-weight: 700;
+    margin: 0 0 1rem;
+  }
+</style>

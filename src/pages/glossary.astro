@@ -1,0 +1,63 @@
+---
+import Base from '../layouts/Base.astro';
+
+const terms = [
+  { term: 'Survivorship bias', def: 'The cognitive distortion of analyzing only what survived a selection process while ignoring what didn\'t. The reason "successful people do X" advice is usually meaningless.', link: '/survivorship-bias' },
+  { term: 'Hindsight bias', def: 'The "I knew it all along" effect. After an outcome, we believe we predicted it — distorting how we evaluate decisions made under uncertainty.' },
+  { term: 'Selection bias', def: 'When the data we analyze isn\'t a random sample of reality. Survivorship bias is one specific type of selection bias.' },
+  { term: 'Confirmation bias', def: 'Seeking information that confirms what we already believe and dismissing what doesn\'t.' },
+  { term: 'Counterfactual', def: 'What would have happened if we\'d made a different choice. Counterfactual thinking is the antidote to "it worked out, so it was the right call."' },
+  { term: 'Base rate', def: 'The frequency of an outcome in the general population. "Most startups fail within 5 years" is a base rate. Ignoring base rates is how survivorship bias survives.' },
+  { term: 'Postmortem', def: 'A structured analysis of why something failed, written after the fact. Surbias is a public, informal version of this.' },
+  { term: 'Anonymous post', def: 'A post on Surbias attached to a user account but displayed without the author\'s name. The default for all posts.' },
+  { term: 'Empathetic reaction', def: 'Surbias\'s alternative to "likes." Five options: me too, hug, strength, respect, solidarity. Designed to mirror what people actually feel reading a vulnerable story.' },
+  { term: '"Me too"', def: 'The Surbias reaction that means "I\'ve been there." The most-used reaction across the platform.' },
+  { term: 'Failure of the Week', def: 'The most-reacted-to story in the last 7 days. Featured prominently on the homepage.' },
+  { term: 'Story prompt', def: 'A weekly question that rotates on the homepage to help people who want to share but don\'t know where to start.' },
+  { term: 'Failure category', def: 'One of seven buckets a story can be filed under: career, business, education, relationships, health, financial, other.' },
+];
+---
+
+<Base
+  title="Glossary — Surbias"
+  description="Definitions of survivorship bias, base rates, postmortems, and other terms used on Surbias."
+>
+  <article class="pillar">
+    <header class="pillar-header">
+      <p class="pillar-eyebrow">Glossary</p>
+      <h1>Glossary</h1>
+      <p class="pillar-subtitle">Plain-language definitions of the terms we use on Surbias and around survivorship bias.</p>
+    </header>
+
+    <dl class="glossary">
+      {terms.map((t) => (
+        <div class="glossary-row" id={t.term.toLowerCase().replace(/[^\w]+/g, '-')}>
+          <dt>{t.term}</dt>
+          <dd>
+            {t.def}
+            {t.link && <> — <a href={t.link}>full guide</a></>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  </article>
+</Base>
+
+<style>
+  .pillar {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+    line-height: 1.7;
+  }
+  .pillar-header { margin-bottom: 2rem; }
+  .pillar-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--surbias-warm); margin: 0 0 0.5rem; }
+  .pillar-header h1 { font-size: clamp(1.85rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; line-height: 1.2; }
+  .pillar-subtitle { color: var(--surbias-text-muted); font-size: 1rem; }
+
+  .glossary { display: grid; gap: 1rem; margin: 0; }
+  .glossary-row { padding: 1rem 1.25rem; background: var(--surbias-card-bg); border: 1px solid var(--surbias-border); border-radius: var(--radius-md); scroll-margin-top: 80px; }
+  .glossary dt { font-weight: 700; color: var(--surbias-text); margin-bottom: 0.35rem; font-size: 1.02rem; }
+  .glossary dd { margin: 0; color: var(--surbias-text); line-height: 1.65; font-size: 0.95rem; }
+  .glossary a { color: var(--surbias-primary); }
+</style>

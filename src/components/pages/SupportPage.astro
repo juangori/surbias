@@ -1,0 +1,467 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getLocaleFromUrl, t } from '../../i18n';
+import { getDb } from '../../db';
+import { posts, reactions, comments } from '../../db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+const db = getDb(env.DB);
+
+// Live community numbers — they make the ask feel real
+const [storiesRow] = await db.select({ count: sql<number>`count(*)` }).from(posts).where(eq(posts.status, 'published'));
+const [reactionsRow] = await db.select({ count: sql<number>`count(*)` }).from(reactions);
+const [commentsRow] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+
+const storyCount = storiesRow?.count || 0;
+const reactionCount = reactionsRow?.count || 0;
+const commentCount = commentsRow?.count || 0;
+
+// Localized copy
+const copy: Record<string, {
+  title: string;
+  subtitle: string;
+  why_h: string;
+  why_p: string[];
+  costs_h: string;
+  costs: { label: string; value: string }[];
+  perks_h: string;
+  perks: string[];
+  thanks: string;
+  cta_3: string;
+  cta_10: string;
+  cta_25: string;
+  alt_h: string;
+  alt: string[];
+}> = {
+  en: {
+    title: 'Help keep Surbias free',
+    subtitle: 'No ads. No trackers. No paywall. Just stories.',
+    why_h: 'Why donations',
+    why_p: [
+      'Surbias is funded entirely by people who find value here. There is no investor, no growth-at-all-costs pressure, no plan to bolt on ads or sell your data.',
+      'A donation does one thing: it keeps the lights on so anyone, anywhere, can post a failure story without paying a cent.',
+    ],
+    costs_h: 'What it actually costs to run',
+    costs: [
+      { label: 'Domain (yearly)', value: '~ $14' },
+      { label: 'Cloudflare Workers + D1', value: '$0–5 / month' },
+      { label: 'Email (Resend, when active)', value: '~ $0–10 / month' },
+      { label: 'Hours of weekend work', value: 'a lot' },
+    ],
+    perks_h: 'What your tip unlocks',
+    perks: [
+      'Surbias stays 100% free for everyone, in 5 languages',
+      'Zero ads — your reading experience never gets worse',
+      'Zero trackers — your story is yours, not a marketer\'s data point',
+      'Roadmap features: weekly digest, mobile app, more languages',
+    ],
+    thanks: 'If you can\'t donate — sharing a friend\'s story or your own helps just as much. Thank you. Honestly.',
+    cta_3: 'Tip $3',
+    cta_10: 'Tip $10',
+    cta_25: 'Tip $25',
+    alt_h: 'Other ways to support',
+    alt: [
+      'Share a story (yours, or someone you know)',
+      'Tell one friend about Surbias',
+      'Comment "me too" on a story that hits home',
+      'Share a story you loved on X / WhatsApp / LinkedIn',
+    ],
+  },
+  es: {
+    title: 'Ayudanos a mantener Surbias gratis',
+    subtitle: 'Sin ads. Sin trackers. Sin paywall. Solo historias.',
+    why_h: 'Por qué donaciones',
+    why_p: [
+      'Surbias se sostiene 100% con la gente que encuentra valor acá. No hay inversores, no hay presión de crecer a cualquier costo, no hay plan de meter ads ni vender tus datos.',
+      'Tu donación hace una cosa: mantener las luces prendidas para que cualquiera, en cualquier lado, pueda publicar una historia de fracaso sin pagar un centavo.',
+    ],
+    costs_h: 'Lo que cuesta de verdad',
+    costs: [
+      { label: 'Dominio (anual)', value: '~ US$ 14' },
+      { label: 'Cloudflare Workers + D1', value: 'US$ 0–5 / mes' },
+      { label: 'Email (Resend, cuando esté)', value: '~ US$ 0–10 / mes' },
+      { label: 'Horas de fin de semana', value: 'muchas' },
+    ],
+    perks_h: 'Lo que desbloquea tu propina',
+    perks: [
+      'Surbias sigue siendo 100% gratis, en 5 idiomas',
+      'Cero ads — tu experiencia leyendo nunca empeora',
+      'Cero trackers — tu historia es tuya, no un dato de marketing',
+      'Próximas features: digest semanal, app mobile, más idiomas',
+    ],
+    thanks: 'Si no podés donar — compartir una historia (la tuya o de un amigo) ayuda igual o más. Gracias. En serio.',
+    cta_3: 'Aportá US$ 3',
+    cta_10: 'Aportá US$ 10',
+    cta_25: 'Aportá US$ 25',
+    alt_h: 'Otras formas de ayudar',
+    alt: [
+      'Compartí una historia (tuya o de alguien)',
+      'Contale a un amigo sobre Surbias',
+      'Comentá "yo también" en una historia que te llegó',
+      'Compartí en X / WhatsApp / LinkedIn una historia que te gustó',
+    ],
+  },
+  de: {
+    title: 'Hilf, Surbias kostenlos zu halten',
+    subtitle: 'Keine Ads. Kein Tracking. Keine Paywall. Nur Geschichten.',
+    why_h: 'Warum Spenden',
+    why_p: [
+      'Surbias wird komplett von Leser:innen finanziert, die hier Wert finden. Keine Investoren, kein Wachstumsdruck um jeden Preis, kein Plan für Werbung oder Datenverkauf.',
+      'Eine Spende macht genau eins: sie hält die Lichter an, damit alle, überall, eine Misserfolgsgeschichte teilen können — ohne Cent.',
+    ],
+    costs_h: 'Was der Betrieb wirklich kostet',
+    costs: [
+      { label: 'Domain (jährlich)', value: '~ 14 $' },
+      { label: 'Cloudflare Workers + D1', value: '0–5 $ / Monat' },
+      { label: 'E-Mail (Resend, wenn aktiv)', value: '~ 0–10 $ / Monat' },
+      { label: 'Wochenend-Arbeitsstunden', value: 'viele' },
+    ],
+    perks_h: 'Was dein Trinkgeld bewirkt',
+    perks: [
+      'Surbias bleibt 100% kostenlos in 5 Sprachen',
+      'Null Werbung — dein Leseerlebnis wird nie schlechter',
+      'Null Tracker — deine Geschichte gehört dir',
+      'Roadmap: Wochen-Digest, Mobile-App, mehr Sprachen',
+    ],
+    thanks: 'Wenn du nicht spenden kannst — eine Geschichte zu teilen hilft genauso. Danke. Wirklich.',
+    cta_3: '3 $ spenden',
+    cta_10: '10 $ spenden',
+    cta_25: '25 $ spenden',
+    alt_h: 'Andere Wege zu unterstützen',
+    alt: [
+      'Eine Geschichte teilen (deine oder die einer Person, die du kennst)',
+      'Einer Person von Surbias erzählen',
+      '„Mir auch" auf einer berührenden Geschichte kommentieren',
+      'Eine Lieblingsgeschichte auf X / WhatsApp / LinkedIn teilen',
+    ],
+  },
+  fr: {
+    title: 'Aide à garder Surbias gratuit',
+    subtitle: 'Pas de pub. Pas de tracker. Pas de paywall. Juste des histoires.',
+    why_h: 'Pourquoi des dons',
+    why_p: [
+      'Surbias est financé à 100% par les gens qui y trouvent de la valeur. Pas d\'investisseur, pas de pression de croissance, aucun projet d\'ajouter des pubs ou vendre tes données.',
+      'Un don fait une chose : garder les lumières allumées pour que n\'importe qui puisse partager une histoire d\'échec — sans payer un centime.',
+    ],
+    costs_h: 'Ce que ça coûte vraiment',
+    costs: [
+      { label: 'Nom de domaine (annuel)', value: '~ 14 $' },
+      { label: 'Cloudflare Workers + D1', value: '0–5 $ / mois' },
+      { label: 'E-mail (Resend, quand actif)', value: '~ 0–10 $ / mois' },
+      { label: 'Heures de week-end', value: 'beaucoup' },
+    ],
+    perks_h: 'Ce que ton pourboire débloque',
+    perks: [
+      'Surbias reste 100% gratuit, dans 5 langues',
+      'Zéro pub — ton expérience ne se dégrade jamais',
+      'Zéro tracker — ton histoire est à toi',
+      'Roadmap : digest hebdo, app mobile, plus de langues',
+    ],
+    thanks: 'Si tu ne peux pas donner — partager une histoire aide autant. Merci. Vraiment.',
+    cta_3: 'Donner 3 $',
+    cta_10: 'Donner 10 $',
+    cta_25: 'Donner 25 $',
+    alt_h: 'Autres façons de soutenir',
+    alt: [
+      'Partager une histoire (la tienne ou de quelqu\'un)',
+      'Parler de Surbias à un·e ami·e',
+      'Commenter "moi aussi" sur une histoire qui te touche',
+      'Partager une histoire que tu as aimée sur X / WhatsApp / LinkedIn',
+    ],
+  },
+  pt: {
+    title: 'Ajuda a manter o Surbias gratuito',
+    subtitle: 'Sem anúncios. Sem trackers. Sem paywall. Só histórias.',
+    why_h: 'Por que doações',
+    why_p: [
+      'O Surbias é 100% financiado por quem encontra valor aqui. Sem investidores, sem pressão de crescer a qualquer custo, sem plano de colocar ads ou vender teus dados.',
+      'Uma doação faz uma coisa: manter as luzes acesas para que qualquer pessoa, em qualquer lugar, publique uma história de fracasso sem pagar nada.',
+    ],
+    costs_h: 'Quanto custa de verdade',
+    costs: [
+      { label: 'Domínio (anual)', value: '~ US$ 14' },
+      { label: 'Cloudflare Workers + D1', value: 'US$ 0–5 / mês' },
+      { label: 'E-mail (Resend, quando ativo)', value: '~ US$ 0–10 / mês' },
+      { label: 'Horas de fim de semana', value: 'muitas' },
+    ],
+    perks_h: 'O que tua gorjeta desbloqueia',
+    perks: [
+      'O Surbias continua 100% gratuito, em 5 idiomas',
+      'Zero ads — tua experiência nunca piora',
+      'Zero trackers — tua história é tua',
+      'Próximas features: digest semanal, app mobile, mais idiomas',
+    ],
+    thanks: 'Se não podes doar — compartilhar uma história ajuda igual ou mais. Obrigado. De verdade.',
+    cta_3: 'Apoiar US$ 3',
+    cta_10: 'Apoiar US$ 10',
+    cta_25: 'Apoiar US$ 25',
+    alt_h: 'Outras formas de apoiar',
+    alt: [
+      'Compartilhar uma história (tua ou de alguém)',
+      'Contar a um amigo sobre o Surbias',
+      'Comentar "eu também" numa história que te tocou',
+      'Compartilhar uma história favorita no X / WhatsApp / LinkedIn',
+    ],
+  },
+};
+
+const c = copy[locale] || copy.en;
+const description = `${c.title} — ${c.subtitle}`;
+---
+
+<Base title={c.title} description={description}>
+  <div class="support-page">
+    <header class="support-hero">
+      <div class="support-hero-emoji" aria-hidden="true">☕</div>
+      <h1>{c.title}</h1>
+      <p class="support-hero-sub">{c.subtitle}</p>
+
+      <div class="support-cta-row">
+        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-tier">{c.cta_3}</a>
+        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-tier support-tier--featured">{c.cta_10}</a>
+        <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-tier">{c.cta_25}</a>
+      </div>
+
+      <p class="support-hero-meta">Powered by Ko-fi · No account needed</p>
+    </header>
+
+    <div class="support-stats">
+      <div class="support-stat">
+        <span class="support-stat-num">{storyCount.toLocaleString()}</span>
+        <span class="support-stat-label">stories</span>
+      </div>
+      <div class="support-stat">
+        <span class="support-stat-num">{reactionCount.toLocaleString()}</span>
+        <span class="support-stat-label">reactions</span>
+      </div>
+      <div class="support-stat">
+        <span class="support-stat-num">{commentCount.toLocaleString()}</span>
+        <span class="support-stat-label">comments</span>
+      </div>
+    </div>
+
+    <section class="support-section">
+      <h2>{c.why_h}</h2>
+      {c.why_p.map((p) => <p>{p}</p>)}
+    </section>
+
+    <section class="support-section">
+      <h2>{c.costs_h}</h2>
+      <ul class="support-cost-list">
+        {c.costs.map((row) => (
+          <li>
+            <span>{row.label}</span>
+            <span class="support-cost-value">{row.value}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="support-section">
+      <h2>{c.perks_h}</h2>
+      <ul class="support-perks">
+        {c.perks.map((p) => <li>✓ {p}</li>)}
+      </ul>
+    </section>
+
+    <section class="support-section">
+      <h2>{c.alt_h}</h2>
+      <ul class="support-perks support-perks--alt">
+        {c.alt.map((p) => <li>• {p}</li>)}
+      </ul>
+    </section>
+
+    <p class="support-thanks">{c.thanks}</p>
+
+    <div class="support-cta-row support-cta-row--bottom">
+      <a href="https://ko-fi.com/surbias" target="_blank" rel="noopener" class="support-tier support-tier--big">☕ {i.common.footer_coffee}</a>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .support-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1rem 1rem 3rem;
+  }
+  .support-hero {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    background: linear-gradient(140deg, #fff8e1 0%, #fff3c8 100%);
+    border: 1.5px solid #f0d080;
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+  }
+  [data-theme="dark"] .support-hero {
+    background: linear-gradient(140deg, #2a2415 0%, #2f2818 100%);
+    border-color: #5a4a20;
+  }
+  .support-hero-emoji {
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+    filter: drop-shadow(0 4px 10px rgba(184,134,11,0.35));
+  }
+  .support-hero h1 {
+    font-size: clamp(1.75rem, 5vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+    color: var(--surbias-text);
+  }
+  .support-hero-sub {
+    color: var(--surbias-text-muted);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .support-hero-meta {
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--surbias-text-light);
+  }
+  .support-cta-row {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .support-cta-row--bottom { margin-top: 2rem; }
+  .support-tier {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.4rem;
+    background: #fff;
+    color: #92600a;
+    border: 1.5px solid #f0d080;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(184,134,11,0.18);
+    transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
+  }
+  .support-tier:hover {
+    transform: translateY(-2px);
+    background: #fff8e1;
+    box-shadow: 0 6px 18px rgba(184,134,11,0.32);
+    color: #92600a;
+  }
+  .support-tier--featured {
+    background: var(--surbias-warm);
+    color: #fff !important;
+    border-color: var(--surbias-warm);
+    box-shadow: 0 4px 14px rgba(184,134,11,0.4);
+  }
+  .support-tier--featured:hover {
+    background: #c8941b;
+    color: #fff;
+  }
+  .support-tier--big {
+    padding: 0.9rem 2rem;
+    font-size: 1rem;
+    background: var(--surbias-warm);
+    color: #fff !important;
+    border-color: var(--surbias-warm);
+  }
+
+  .support-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .support-stat {
+    text-align: center;
+    padding: 1rem 0.5rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+  }
+  .support-stat-num {
+    display: block;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--surbias-primary);
+    line-height: 1;
+  }
+  .support-stat-label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--surbias-text-muted);
+    margin-top: 0.3rem;
+    text-transform: lowercase;
+  }
+
+  .support-section {
+    margin-bottom: 2rem;
+  }
+  .support-section h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--surbias-text);
+  }
+  .support-section p {
+    color: var(--surbias-text);
+    line-height: 1.75;
+    margin-bottom: 0.85rem;
+  }
+
+  .support-cost-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .support-cost-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--surbias-border);
+    color: var(--surbias-text);
+    font-size: 0.92rem;
+  }
+  .support-cost-list li:last-child { border-bottom: none; }
+  .support-cost-value {
+    font-weight: 700;
+    color: var(--surbias-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .support-perks {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .support-perks li {
+    padding: 0.4rem 0;
+    color: var(--surbias-text);
+    line-height: 1.6;
+  }
+
+  .support-thanks {
+    margin: 2rem 0 1rem;
+    padding: 1.25rem 1.5rem;
+    border-left: 4px solid var(--surbias-primary);
+    background: var(--surbias-warm-light);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--surbias-text);
+    font-style: italic;
+    line-height: 1.65;
+  }
+
+  @media (max-width: 480px) {
+    .support-stats { grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+    .support-stat-num { font-size: 1.35rem; }
+    .support-tier { padding: 0.6rem 1.1rem; font-size: 0.85rem; }
+  }
+</style>

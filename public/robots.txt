@@ -2,4 +2,12 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+
+# Be nice to the Cloudflare worker
+Crawl-delay: 1
+
 Sitemap: https://surbias.com/sitemap.xml
+
+# Machine-readable summary for AI crawlers
+# https://llmstxt.org/
+# /llms.txt

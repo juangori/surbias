@@ -1,0 +1,290 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDb } from '../db';
+import { posts } from '../db/schema';
+import { eq, desc, and, sql } from 'drizzle-orm';
+import { postWithAuthor } from '../lib/post-query';
+import { env } from 'cloudflare:workers';
+import PostCard from '../components/PostCard.astro';
+import SupportCTA from '../components/SupportCTA.astro';
+
+const db = getDb(env.DB);
+const recentPosts = await db
+  .select(postWithAuthor)
+  .from(posts)
+  .where(and(eq(posts.status, 'published'), eq(posts.locale, 'en')))
+  .orderBy(desc(posts.createdAt))
+  .limit(3);
+
+const totalReactionsExpr = sql`(
+  COALESCE(json_extract(${posts.reactionCounts}, '$.metoo'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.hug'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.strength'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.respect'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.solidarity'), 0)
+)`;
+const topPosts = await db
+  .select(postWithAuthor)
+  .from(posts)
+  .where(and(eq(posts.status, 'published'), eq(posts.locale, 'en')))
+  .orderBy(sql`${totalReactionsExpr} DESC`, desc(posts.createdAt))
+  .limit(3);
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  mainEntityOfPage: { '@type': 'WebPage', '@id': 'https://surbias.com/survivorship-bias' },
+  headline: 'Survivorship Bias: What It Is, Why It Distorts Reality, and How to See Past It',
+  description: 'A complete guide to survivorship bias — the cognitive distortion that hides failures and overweighs successes. Real examples (planes, mutual funds, founder advice), the WWII story behind it, and a practical playbook to spot it in your own thinking.',
+  image: 'https://surbias.com/logo.png',
+  datePublished: '2025-01-01',
+  dateModified: new Date().toISOString().split('T')[0],
+  author: { '@type': 'Organization', name: 'Surbias', url: 'https://surbias.com' },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Surbias',
+    logo: { '@type': 'ImageObject', url: 'https://surbias.com/logo.png' },
+  },
+  inLanguage: 'en',
+  about: { '@type': 'Thing', name: 'Survivorship bias', sameAs: 'https://en.wikipedia.org/wiki/Survivorship_bias' },
+};
+---
+
+<Base
+  title="Survivorship Bias: What It Is, Why It Warps Reality (Examples + How to Spot It)"
+  description="The complete guide to survivorship bias — the cognitive trap that makes us copy winners and ignore losers. WWII planes, mutual funds, founder advice, and a practical playbook to see past it."
+  jsonLd={articleJsonLd}
+>
+  <article class="pillar">
+    <header class="pillar-header">
+      <p class="pillar-eyebrow">Mental models</p>
+      <h1>Survivorship Bias</h1>
+      <p class="pillar-subtitle">The cognitive distortion that hides failures, inflates the credit we give to winners, and quietly warps almost every piece of advice you've ever read.</p>
+      <p class="pillar-meta">8 min read · Updated {new Date().toISOString().split('T')[0]}</p>
+    </header>
+
+    <nav class="pillar-toc" aria-label="Table of contents">
+      <p class="pillar-toc-title">In this guide</p>
+      <ol>
+        <li><a href="#definition">Definition</a></li>
+        <li><a href="#wald">The WWII story behind the term</a></li>
+        <li><a href="#examples">Five everyday examples</a></li>
+        <li><a href="#why-dangerous">Why it's dangerous</a></li>
+        <li><a href="#spot">How to spot it</a></li>
+        <li><a href="#counter">How to counter it</a></li>
+        <li><a href="#surbias">Where Surbias fits in</a></li>
+      </ol>
+    </nav>
+
+    <section id="definition">
+      <h2>What is survivorship bias?</h2>
+      <p><strong>Survivorship bias</strong> is the logical error of looking only at people, things, or strategies that "survived" some selection process — and overlooking everything that didn't. The result: we mistake survival for cause, and we copy patterns that probably had nothing to do with the success.</p>
+      <p>The bias is built into how data reaches us. Failed startups don't write postmortems. Authors of unfinished novels don't get interviewed. Mutual funds that go bust quietly disappear from the index. We see <em>only the survivors</em>, and we draw conclusions as if they were the whole population.</p>
+      <blockquote>If you only study the winners, you'll learn to predict the past — not the future.</blockquote>
+    </section>
+
+    <section id="wald">
+      <h2>The WWII story that named the bias</h2>
+      <p>During World War II, the U.S. military wanted to add armor to bombers — but armor is heavy, so they could only reinforce certain spots. They studied returning planes, mapped where the bullet holes clustered (wings, fuselage), and prepared to armor those areas.</p>
+      <p>Statistician <strong>Abraham Wald</strong> stopped them. The bullet holes, he pointed out, were on the planes that <em>came back</em>. The planes that didn't return were probably hit somewhere else — most likely the engines and cockpit, areas the returning planes were unscathed in. <strong>Armor the parts with no holes.</strong></p>
+      <p>Wald was right. The story is the canonical example because it makes the bias visible: the data was the survivors, and acting on it would have killed more pilots, not fewer.</p>
+    </section>
+
+    <section id="examples">
+      <h2>Five everyday examples</h2>
+
+      <h3>1. Founder advice</h3>
+      <p>"Drop out, follow your passion, ignore the haters." That advice comes from the founders we've heard of — Jobs, Gates, Zuckerberg. We don't hear from the millions who did the same thing and ended up with nothing. The drop-out signal looks like causation; it's almost certainly noise.</p>
+
+      <h3>2. Mutual fund returns</h3>
+      <p>The 10-year average return for "all funds in the index" looks great because losing funds get quietly liquidated and removed from the data set. The real average — including the dead funds — is meaningfully lower. This is called <em>survivorship bias in finance</em>, and it's measurable.</p>
+
+      <h3>3. Old buildings are beautiful</h3>
+      <p>"They don't make architecture like they used to." Of course not — the ugly buildings from 1750 got demolished long ago. We're comparing the best of one era to all of another.</p>
+
+      <h3>4. Productivity routines</h3>
+      <p>"Successful people wake up at 5am and journal." Some do. Plenty of unsuccessful people also wake up at 5am and journal. We just don't write articles about them.</p>
+
+      <h3>5. "I never wore sunscreen and I'm fine"</h3>
+      <p>The people who said the same thing and got skin cancer are no longer in the conversation.</p>
+    </section>
+
+    <section id="why-dangerous">
+      <h2>Why it's dangerous</h2>
+      <p>Survivorship bias isn't just an interesting puzzle. It actively distorts decisions:</p>
+      <ul>
+        <li><strong>It inflates confidence.</strong> If "everyone who tries this succeeds" (because the failures are invisible), risk feels lower than it is.</li>
+        <li><strong>It misattributes credit.</strong> We credit the surface trait (drop-out, 5am routine) when the real cause was something we can't see — luck, timing, capital, network.</li>
+        <li><strong>It silences the people who tried.</strong> The 95% who failed feel ashamed because they "must be the exception" — when in fact they're the rule.</li>
+        <li><strong>It makes advice useless.</strong> "Just keep going" is technically true for the survivors and meaningless for everyone else.</li>
+      </ul>
+    </section>
+
+    <section id="spot">
+      <h2>How to spot survivorship bias</h2>
+      <p>Three questions, every time you read advice or look at data:</p>
+      <ol>
+        <li><strong>Where are the people who tried this and failed?</strong> If you can't see them, you're looking at survivors.</li>
+        <li><strong>What's the base rate?</strong> Out of everyone who attempted X, what fraction got the outcome being celebrated?</li>
+        <li><strong>If I removed the survivor, would the advice still hold?</strong> If "drop out" only works because of three specific people, it's not advice — it's a story.</li>
+      </ol>
+    </section>
+
+    <section id="counter">
+      <h2>How to counter it in your own thinking</h2>
+      <ul>
+        <li><strong>Read postmortems and failure stories</strong> — they're the data the survivor case studies are missing.</li>
+        <li><strong>Look at the dead startups, not the unicorns.</strong> CB Insights publishes lists of why startups fail. Read those before you read another founder bio.</li>
+        <li><strong>Question every "successful people do X" article.</strong> Add "...and so do most unsuccessful people" mentally and see if the claim still holds.</li>
+        <li><strong>Share your own failures.</strong> The more visible failures become, the harder it is for the bias to hide them. (This is literally why Surbias exists.)</li>
+      </ul>
+    </section>
+
+    <section id="surbias" class="pillar-callout">
+      <h2>Where Surbias fits in</h2>
+      <p>Surbias is a small attempt to fix the data set. People share real failure stories — anonymously, in 5 languages, no happy ending required — so the next person who's tried-and-failed can see they're not the exception. They're the rule.</p>
+      <p>You can read the most-reacted stories on <a href="/top">/top</a>, browse by category on the <a href="/">homepage</a>, or share your own.</p>
+      <p style="margin-top:1.25rem;"><a href="/post/new" class="btn-cta">Share a failure story</a></p>
+    </section>
+
+    {topPosts.length > 0 && (
+      <section>
+        <h2>Real failure stories from the community</h2>
+        <p style="color:var(--surbias-text-muted);margin-bottom:1rem;">The most-reacted-to stories on Surbias right now:</p>
+        <div class="posts-grid">
+          {topPosts.map((p) => <PostCard locale="en" post={p} />)}
+        </div>
+      </section>
+    )}
+
+    {recentPosts.length > 0 && topPosts.length === 0 && (
+      <section>
+        <h2>Recent failure stories</h2>
+        <div class="posts-grid">
+          {recentPosts.map((p) => <PostCard locale="en" post={p} />)}
+        </div>
+      </section>
+    )}
+
+    <section style="margin-top: 2.5rem;">
+      <SupportCTA locale="en" variant="card" />
+    </section>
+
+    <footer class="pillar-footer">
+      <p>Further reading:</p>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Survivorship_bias" target="_blank" rel="noopener">Wikipedia: Survivorship bias</a></li>
+        <li><a href="/famous-failures">Famous failures: how survivors hide the rule</a></li>
+        <li><a href="/glossary">Surbias glossary: terms we use</a></li>
+        <li><a href="/about">About Surbias</a></li>
+      </ul>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .pillar {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+    line-height: 1.78;
+    color: var(--surbias-text);
+  }
+  .pillar-header { margin-bottom: 2rem; }
+  .pillar-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--surbias-warm);
+    margin: 0 0 0.5rem;
+  }
+  .pillar-header h1 {
+    font-size: clamp(2rem, 5.5vw, 2.7rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+    line-height: 1.15;
+  }
+  .pillar-subtitle {
+    font-size: 1.15rem;
+    color: var(--surbias-text-muted);
+    line-height: 1.55;
+    margin: 0 0 0.6rem;
+  }
+  .pillar-meta {
+    font-size: 0.82rem;
+    color: var(--surbias-text-light);
+    margin: 0;
+  }
+  .pillar-toc {
+    background: var(--surbias-warm-light);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .pillar-toc-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--surbias-text-muted);
+    margin: 0 0 0.5rem;
+  }
+  .pillar-toc ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.85;
+  }
+  .pillar-toc a {
+    color: var(--surbias-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .pillar-toc a:hover { text-decoration: underline; }
+
+  .pillar h2 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 2.5rem 0 0.85rem;
+    line-height: 1.25;
+  }
+  .pillar h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .pillar p { margin-bottom: 1rem; }
+  .pillar ul, .pillar ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+  .pillar li { margin-bottom: 0.5rem; }
+  .pillar blockquote {
+    margin: 1rem 0;
+    padding: 1rem 1.5rem;
+    border-left: 4px solid var(--surbias-primary);
+    background: var(--surbias-warm-light);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--surbias-text);
+  }
+  .pillar-callout {
+    background: linear-gradient(140deg, #f4faf6, #ecf5ef);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin: 2.5rem 0;
+  }
+  [data-theme="dark"] .pillar-callout { background: linear-gradient(140deg, #1a2520, #1d2922); }
+  .pillar-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surbias-border);
+    color: var(--surbias-text-muted);
+  }
+  .pillar-footer ul { padding-left: 1.25rem; }
+  .pillar-footer a { color: var(--surbias-primary); }
+
+  section { scroll-margin-top: 80px; }
+</style>

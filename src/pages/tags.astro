@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDb } from '../db';
+import { tags } from '../db/schema';
+import { desc } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+const db = getDb(env.DB);
+const allTags = await db.select().from(tags).orderBy(desc(tags.count)).limit(200);
+
+// Bucket sizes for tag cloud
+function fontSize(count: number, max: number): number {
+  if (max === 0) return 0.85;
+  const ratio = count / max;
+  return 0.85 + ratio * 1.15; // 0.85rem .. 2rem
+}
+const maxCount = allTags[0]?.count || 1;
+---
+
+<Base
+  title="All tags — Surbias"
+  description="Browse failure stories by tag. Trending topics on Surbias right now."
+>
+  <div class="tags-page">
+    <header class="tags-header">
+      <p class="pillar-eyebrow">Tags</p>
+      <h1>All tags</h1>
+      <p class="tags-sub">Browse stories by topic. Bigger = more stories. Click any tag to see related failure stories.</p>
+    </header>
+
+    {allTags.length > 0 ? (
+      <div class="tag-cloud">
+        {allTags.map((t) => (
+          <a
+            href={`/search?q=${encodeURIComponent(t.name)}`}
+            class="tag-cloud-item"
+            style={`font-size: ${fontSize(t.count, maxCount)}rem;`}
+          >
+            #{t.name}
+            <span class="tag-cloud-count">{t.count}</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p style="color:var(--surbias-text-muted);text-align:center;padding:3rem 1rem;">No tags yet — be the first to add a hashtag to your story.</p>
+    )}
+  </div>
+</Base>
+
+<style>
+  .tags-page { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  .tags-header { margin-bottom: 2rem; }
+  .pillar-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--surbias-warm); margin: 0 0 0.5rem; }
+  .tags-header h1 { font-size: clamp(1.85rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; line-height: 1.2; }
+  .tags-sub { color: var(--surbias-text-muted); margin: 0; font-size: 1rem; }
+
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: baseline;
+    line-height: 1.8;
+  }
+  .tag-cloud-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    padding: 0.25rem 0.7rem;
+    background: var(--surbias-warm-light);
+    color: var(--surbias-primary);
+    border-radius: 9999px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .tag-cloud-item:hover { background: var(--surbias-warm-tint); transform: translateY(-1px); }
+  .tag-cloud-count {
+    font-size: 0.65em;
+    color: var(--surbias-text-muted);
+    font-weight: 500;
+    margin-left: 2px;
+  }
+</style>

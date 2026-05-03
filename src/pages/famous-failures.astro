@@ -1,0 +1,163 @@
+---
+import Base from '../layouts/Base.astro';
+import SupportCTA from '../components/SupportCTA.astro';
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  mainEntityOfPage: { '@type': 'WebPage', '@id': 'https://surbias.com/famous-failures' },
+  headline: '17 Famous Failures: From Lincoln to Spielberg (and Why They Mislead You)',
+  description: 'A list of famous people who failed before they succeeded — and an honest look at why these stories are inspiring AND a perfect example of survivorship bias.',
+  image: 'https://surbias.com/logo.png',
+  datePublished: '2025-01-15',
+  dateModified: new Date().toISOString().split('T')[0],
+  author: { '@type': 'Organization', name: 'Surbias' },
+  publisher: { '@type': 'Organization', name: 'Surbias', logo: { '@type': 'ImageObject', url: 'https://surbias.com/logo.png' } },
+  inLanguage: 'en',
+};
+
+const failures = [
+  { name: 'Abraham Lincoln', what: 'Lost his job, was defeated for state legislature, failed in business, lost 8 elections. Became the 16th U.S. President.', year: '1832–1860' },
+  { name: 'Walt Disney', what: 'Fired from a newspaper "for lack of imagination." His first animation studio went bankrupt.', year: '1919' },
+  { name: 'Thomas Edison', what: 'His teachers said he was "too stupid to learn anything." Tried thousands of materials before the lightbulb worked.', year: '1879' },
+  { name: 'Henry Ford', what: 'First five businesses failed, leaving him broke. He was 40 when Ford Motor Company finally took off.', year: '1899–1903' },
+  { name: 'J.K. Rowling', what: 'Single mother on welfare, rejected by 12 publishers before Harry Potter sold.', year: '1995' },
+  { name: 'Steven Spielberg', what: 'Rejected by USC School of Cinematic Arts twice.', year: '1965, 1968' },
+  { name: 'Oprah Winfrey', what: 'Fired from her first TV job for being "unfit for television."', year: '1976' },
+  { name: 'Stephen King', what: 'Carrie was rejected 30 times. He threw the manuscript in the trash; his wife pulled it out.', year: '1973' },
+  { name: 'Vera Wang', what: 'Failed to make the U.S. Olympic figure skating team. Designed her first dress at 40.', year: '1968' },
+  { name: 'Vincent van Gogh', what: 'Sold one painting in his lifetime — to a friend, for the equivalent of about $50.', year: '1888' },
+  { name: 'James Dyson', what: '5,127 prototype failures before the bagless vacuum worked.', year: '1979–1983' },
+  { name: 'Michael Jordan', what: 'Cut from his high school basketball team. "I\'ve missed more than 9,000 shots in my career."', year: '1978' },
+  { name: 'Albert Einstein', what: 'Couldn\'t find a teaching job for 9 years after graduating. Worked as a patent clerk.', year: '1900–1909' },
+  { name: 'Sylvester Stallone', what: 'Rejected 1,500 times pitching the Rocky script. Sold his dog because he was broke. (He bought it back.)', year: '1975' },
+  { name: 'Bill Gates', what: 'Traf-O-Data, his first company, was a flop. The product barely worked.', year: '1972' },
+  { name: 'Arianna Huffington', what: 'Her second book was rejected by 36 publishers.', year: '1973' },
+  { name: 'Elvis Presley', what: 'Fired after one performance at the Grand Ole Opry. Manager told him to go back to driving trucks.', year: '1954' },
+];
+---
+
+<Base
+  title="17 Famous Failures Before They Made It (and Why the List Lies to You)"
+  description="Lincoln, Disney, Edison, Rowling — the famous 'failed-before-they-succeeded' list. Plus the uncomfortable truth: this list is a perfect example of survivorship bias."
+  jsonLd={articleJsonLd}
+>
+  <article class="pillar">
+    <header class="pillar-header">
+      <p class="pillar-eyebrow">Survivorship bias in action</p>
+      <h1>17 Famous Failures Before They Succeeded</h1>
+      <p class="pillar-subtitle">Inspiring? Yes. Useful as career advice? Probably not. Here's the list — and the part of the story most articles leave out.</p>
+      <p class="pillar-meta">5 min read</p>
+    </header>
+
+    <p>You've seen this list before. Lincoln lost eight elections. Disney was fired for "lack of imagination." Edison failed a thousand times before the lightbulb. The internet recycles these every January as motivation.</p>
+    <p>The list is true. The lesson it implies — <em>"keep going and you'll make it"</em> — is a textbook case of <a href="/survivorship-bias">survivorship bias</a>. We only know these names because they eventually succeeded. The millions who tried just as hard and ended up obscure aren't on the list, because there is no list of them.</p>
+    <p>Read it for the catharsis. Just don't read it as evidence.</p>
+
+    <ol class="famous-list">
+      {failures.map((f) => (
+        <li class="famous-item">
+          <div class="famous-name">{f.name}</div>
+          <div class="famous-what">{f.what}</div>
+          <div class="famous-year">{f.year}</div>
+        </li>
+      ))}
+    </ol>
+
+    <section class="pillar-callout" style="margin-top:2rem;">
+      <h2 style="margin-top:0;">The honest version</h2>
+      <p>Every name above is real. They failed and then succeeded. <strong>So did approximately zero percent of the people you've never heard of, who also failed.</strong> The famous-failures list isn't a roadmap; it's a beautiful collection of survivors.</p>
+      <p>The useful question isn't "what made these 17 different?" It's "how do I make decisions that are smart even if I'm not the survivor?" That requires looking at the failures that <em>didn't</em> become success stories — which is the whole reason Surbias exists.</p>
+      <p style="margin-top:1.25rem;"><a href="/" class="btn-cta">Read real failure stories</a></p>
+    </section>
+
+    <SupportCTA locale="en" variant="card" />
+
+    <footer class="pillar-footer">
+      <p>Related:</p>
+      <ul>
+        <li><a href="/survivorship-bias">Survivorship bias: full guide</a></li>
+        <li><a href="/glossary">Surbias glossary</a></li>
+        <li><a href="/top">Top failure stories on Surbias</a></li>
+      </ul>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .pillar {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+    line-height: 1.78;
+    color: var(--surbias-text);
+  }
+  .pillar-header { margin-bottom: 2rem; }
+  .pillar-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--surbias-warm);
+    margin: 0 0 0.5rem;
+  }
+  .pillar-header h1 {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    margin: 0 0 0.5rem;
+  }
+  .pillar-subtitle { color: var(--surbias-text-muted); font-size: 1.05rem; line-height: 1.55; margin: 0 0 0.5rem; }
+  .pillar-meta { font-size: 0.82rem; color: var(--surbias-text-light); margin: 0; }
+  .famous-list {
+    list-style: none;
+    counter-reset: famous;
+    padding: 0;
+    margin: 1.5rem 0 2rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .famous-item {
+    counter-increment: famous;
+    position: relative;
+    padding: 1rem 1.25rem 1rem 3.5rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .famous-item:hover { border-color: var(--surbias-primary); transform: translateY(-1px); }
+  .famous-item::before {
+    content: counter(famous);
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surbias-warm-light);
+    color: var(--surbias-primary);
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+  .famous-name { font-weight: 700; color: var(--surbias-text); margin-bottom: 0.25rem; }
+  .famous-what { color: var(--surbias-text); font-size: 0.95rem; line-height: 1.55; margin-bottom: 0.4rem; }
+  .famous-year { font-size: 0.78rem; color: var(--surbias-text-light); font-weight: 600; }
+  .pillar-callout {
+    background: linear-gradient(140deg, #f4faf6, #ecf5ef);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin: 2rem 0;
+  }
+  [data-theme="dark"] .pillar-callout { background: linear-gradient(140deg, #1a2520, #1d2922); }
+  .pillar h2 { font-size: 1.4rem; margin-bottom: 0.75rem; }
+  .pillar p { margin-bottom: 1rem; }
+  .pillar-footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--surbias-border); color: var(--surbias-text-muted); }
+  .pillar-footer ul { padding-left: 1.25rem; }
+  .pillar-footer a { color: var(--surbias-primary); }
+</style>

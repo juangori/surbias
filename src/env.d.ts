@@ -13,6 +13,14 @@ interface CloudflareEnv {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   ADMIN_EMAIL: string;
+  RESEND_API_KEY?: string;
+  BREVO_API_KEY?: string;
+  MAILJET_API_KEY?: string;
+  MAILJET_SECRET_KEY?: string;
+  SENDGRID_API_KEY?: string;
+  FROM_EMAIL?: string;
+  KOFI_URL?: string;
+  CRON_SECRET?: string;
 }
 
 // Type the cloudflare:workers module
@@ -29,4 +37,5 @@ interface Window {
     html?: string;
     buttons?: Array<{ text: string; class?: string; onClick?: () => void | Promise<void> }>;
   }) => void;
+  openShareSheet: (opts: { url: string; title?: string; text?: string }) => void;
 }

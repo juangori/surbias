@@ -5,7 +5,7 @@ import { getDb } from '../../../../db';
 import { reactions, posts, users, notificationPrefs, REACTION_TYPES } from '../../../../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getIpHash } from '../../../../lib/rate-limit';
-import { sendEmail, reactionNotificationEmail } from '../../../../lib/email';
+import { sendEmail, emailEnabled, reactionNotificationEmail } from '../../../../lib/email';
 
 export const POST: APIRoute = async ({ params, request }) => {
   const db = getDb(env.DB);
@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       .set({ reactionCounts: JSON.stringify(counts) })
       .where(eq(posts.id, postId));
 
-    if (env.RESEND_API_KEY) {
+    if (emailEnabled(env)) {
       try {
         const post = await db.select({ userId: posts.userId, title: posts.title, slug: posts.slug, id: posts.id })
           .from(posts).where(eq(posts.id, postId)).limit(1);
@@ -62,8 +62,7 @@ export const POST: APIRoute = async ({ params, request }) => {
               const postPath = post[0].slug ? `/post/${post[0].slug}-${post[0].id}` : `/post/${post[0].id}`;
               const postUrl = `${env.BETTER_AUTH_URL || 'https://surbias.com'}${postPath}`;
               const email = reactionNotificationEmail(post[0].title, type, postUrl);
-              const from = env.FROM_EMAIL || 'Surbias <noreply@surbias.com>';
-              sendEmail(env.RESEND_API_KEY, from, { to: author[0].email, ...email }).catch(() => {});
+              sendEmail(env, { to: author[0].email, ...email }).catch(() => {});
             }
           }
         }

@@ -1,0 +1,273 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDb } from '../db';
+import { posts, reactions, comments, users } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+
+const db = getDb(env.DB);
+
+const [storiesRow] = await db.select({ count: sql<number>`count(*)` }).from(posts).where(eq(posts.status, 'published'));
+const [reactionsRow] = await db.select({ count: sql<number>`count(*)` }).from(reactions);
+const [commentsRow] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+const [usersRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
+
+const stats = {
+  stories: storiesRow?.count || 0,
+  reactions: reactionsRow?.count || 0,
+  comments: commentsRow?.count || 0,
+  users: usersRow?.count || 0,
+};
+
+const lastUpdated = new Date().toISOString().split('T')[0];
+---
+
+<Base
+  title="Press kit"
+  description="Logo, screenshots, founder quotes and stats for journalists writing about Surbias."
+>
+  <div class="press-page">
+    <header class="press-hero">
+      <p class="press-eyebrow">Press kit</p>
+      <h1>Surbias in the press</h1>
+      <p class="press-subtitle">Everything you need to write about Surbias — facts, quotes, brand assets. Updated {lastUpdated}.</p>
+    </header>
+
+    <section class="press-section">
+      <h2>The one-liner</h2>
+      <blockquote class="press-quote">
+        Surbias is the social platform for failure stories. People share what didn't work — anonymously, in 5 languages — to combat survivorship bias and remind each other that failing is normal.
+      </blockquote>
+    </section>
+
+    <section class="press-section">
+      <h2>Three things to know</h2>
+      <ol class="press-list">
+        <li><strong>Different by design.</strong> Anonymous-by-default. Reactions are empathetic ("me too", "hug", "strength", "respect", "solidarity") instead of likes. There is no follower count, no engagement leaderboard.</li>
+        <li><strong>Free, ad-free, tracker-free.</strong> The platform is funded by voluntary tips on Ko-fi. No investors, no ads, no data sale. Operating cost is ~$5/month on Cloudflare's edge.</li>
+        <li><strong>Multilingual from day one.</strong> Available in English, Spanish, German, French, and Portuguese — with localized stories in each.</li>
+      </ol>
+    </section>
+
+    <section class="press-section">
+      <h2>By the numbers</h2>
+      <div class="press-stats">
+        <div class="press-stat">
+          <span class="press-stat-num">{stats.stories.toLocaleString()}</span>
+          <span class="press-stat-label">failure stories shared</span>
+        </div>
+        <div class="press-stat">
+          <span class="press-stat-num">{stats.reactions.toLocaleString()}</span>
+          <span class="press-stat-label">empathetic reactions</span>
+        </div>
+        <div class="press-stat">
+          <span class="press-stat-num">{stats.comments.toLocaleString()}</span>
+          <span class="press-stat-label">conversations</span>
+        </div>
+        <div class="press-stat">
+          <span class="press-stat-num">5</span>
+          <span class="press-stat-label">languages</span>
+        </div>
+      </div>
+      <p class="press-note">Live numbers — updated whenever this page loads.</p>
+    </section>
+
+    <section class="press-section">
+      <h2>Founder quotes (free to use)</h2>
+      <blockquote class="press-quote">
+        "We see the survivors, and we copy them. But the silent majority — the people who tried and failed — disappear. That gap is what kills people's confidence. Surbias is a small attempt to fill it."
+      </blockquote>
+      <blockquote class="press-quote">
+        "I didn't want another social network. I wanted a place where you can say 'this didn't work for me' without needing a redemption arc at the end."
+      </blockquote>
+    </section>
+
+    <section class="press-section">
+      <h2>Facts</h2>
+      <ul class="press-facts">
+        <li><strong>Launched:</strong> 2025</li>
+        <li><strong>Founder:</strong> Juan Gori (solo, Buenos Aires)</li>
+        <li><strong>Tech stack:</strong> Astro + Cloudflare Workers + D1 (SQLite at the edge)</li>
+        <li><strong>Funding:</strong> 100% donations via Ko-fi — no investors</li>
+        <li><strong>Cost to operate:</strong> ~$5/month</li>
+        <li><strong>License:</strong> User content remains the user's. Platform code is private.</li>
+        <li><strong>Contact:</strong> <a href="mailto:hello@surbias.com">hello@surbias.com</a></li>
+      </ul>
+    </section>
+
+    <section class="press-section">
+      <h2>Brand assets</h2>
+      <div class="press-assets">
+        <a href="/logo.png" download class="press-asset">
+          <img src="/logo.png" alt="Surbias logo" width="80" height="80" />
+          <span>Logo PNG (full color)</span>
+        </a>
+        <a href="/favicon.svg" download class="press-asset">
+          <img src="/favicon.svg" alt="Surbias mark" width="80" height="80" />
+          <span>Mark SVG (vector)</span>
+        </a>
+      </div>
+      <p class="press-note">Brand colors — Sage <code>#4a7c59</code>, Warm gold <code>#b8860b</code>, Cream <code>#f5f9f6</code>.</p>
+    </section>
+
+    <section class="press-section">
+      <h2>Suggested angles</h2>
+      <ul class="press-list">
+        <li>The anti-LinkedIn: where people share what didn't work</li>
+        <li>Survivorship bias 101 — and why it warps career advice</li>
+        <li>Indie devs building anti-engagement social platforms</li>
+        <li>Mental health & the new wave of vulnerability-first communities</li>
+        <li>Edge architecture economics — running a social network for $5/month</li>
+      </ul>
+    </section>
+
+    <section class="press-section">
+      <h2>Get in touch</h2>
+      <p>Interview requests, partnership, or anything else: <a href="mailto:hello@surbias.com">hello@surbias.com</a>. Usually respond within 24 hours.</p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .press-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1rem 1rem 3rem;
+  }
+  .press-hero {
+    padding: 2rem 0 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--surbias-border);
+    margin-bottom: 2rem;
+  }
+  .press-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--surbias-warm);
+    margin: 0 0 0.5rem;
+  }
+  .press-hero h1 {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+  }
+  .press-subtitle {
+    color: var(--surbias-text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .press-section { margin-bottom: 2.5rem; }
+  .press-section h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--surbias-text);
+  }
+
+  .press-quote {
+    margin: 0 0 1rem;
+    padding: 1rem 1.25rem;
+    border-left: 4px solid var(--surbias-primary);
+    background: var(--surbias-warm-light);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--surbias-text);
+  }
+
+  .press-list {
+    padding-left: 1.25rem;
+    margin: 0;
+  }
+  .press-list li {
+    color: var(--surbias-text);
+    line-height: 1.7;
+    margin-bottom: 0.65rem;
+  }
+
+  .press-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .press-stat {
+    text-align: center;
+    padding: 1rem 0.5rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+  }
+  .press-stat-num {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--surbias-primary);
+    line-height: 1;
+  }
+  .press-stat-label {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--surbias-text-muted);
+    margin-top: 0.35rem;
+  }
+  .press-note {
+    font-size: 0.78rem;
+    color: var(--surbias-text-light);
+    margin-top: 0.75rem;
+  }
+
+  .press-facts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .press-facts li {
+    padding: 0.6rem 0.85rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    color: var(--surbias-text);
+    font-size: 0.92rem;
+  }
+
+  .press-assets {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .press-asset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 1rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--surbias-text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .press-asset:hover { border-color: var(--surbias-primary); color: var(--surbias-primary); }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--surbias-warm-light);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.86em;
+  }
+
+  @media (max-width: 480px) {
+    .press-stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>

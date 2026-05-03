@@ -7,7 +7,7 @@ import { eq, desc } from 'drizzle-orm';
 import { getIpHash, checkRateLimit } from '../../../../lib/rate-limit';
 import { validateComment } from '../../../../lib/moderation';
 import { createAuth } from '../../../../lib/auth';
-import { sendEmail, commentNotificationEmail } from '../../../../lib/email';
+import { sendEmail, emailEnabled, commentNotificationEmail } from '../../../../lib/email';
 
 export const GET: APIRoute = async ({ params }) => {
   const db = getDb(env.DB);
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, params }) => {
     createdAt: new Date(),
   });
 
-  if (env.RESEND_API_KEY && post[0].userId && post[0].userId !== session.user.id) {
+  if (emailEnabled(env) && post[0].userId && post[0].userId !== session.user.id) {
     try {
       const prefs = await db.select().from(notificationPrefs).where(eq(notificationPrefs.userId, post[0].userId)).limit(1);
       const wantsNotif = !prefs[0] || prefs[0].onComment;
@@ -75,8 +75,7 @@ export const POST: APIRoute = async ({ request, params }) => {
           const postUrl = `${env.BETTER_AUTH_URL || 'https://surbias.com'}${postPath}`;
           const preview = body.body.trim().slice(0, 100);
           const email = commentNotificationEmail(post[0].title, preview, postUrl);
-          const from = env.FROM_EMAIL || 'Surbias <noreply@surbias.com>';
-          sendEmail(env.RESEND_API_KEY, from, { to: author[0].email, ...email }).catch(() => {});
+          sendEmail(env, { to: author[0].email, ...email }).catch(() => {});
         }
       }
     } catch (_) {}

@@ -106,13 +106,28 @@ const i = t(locale);
 
       <label for="body">
         {i.post.body_label}
+        <div class="md-toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" class="md-tool" data-md="bold" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
+          <button type="button" class="md-tool" data-md="italic" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+          <button type="button" class="md-tool" data-md="code" title="Inline code" aria-label="Code"><span style="font-family:monospace;">{`</>`}</span></button>
+          <button type="button" class="md-tool" data-md="quote" title="Quote" aria-label="Quote">&rdquo;</button>
+          <button type="button" class="md-tool" data-md="list" title="List" aria-label="List">•</button>
+          <span class="md-spacer"></span>
+          <button type="button" class="md-tool md-preview-toggle" data-md-preview-toggle title="Toggle preview" aria-label="Toggle preview">👁 Preview</button>
+        </div>
         <textarea
           id="body"
           name="body"
           placeholder={i.post.body_placeholder}
           maxlength="5000"
           required
+          data-md-input
         ></textarea>
+        <div class="md-preview" data-md-preview hidden></div>
+        <div class="md-meta">
+          <span class="md-hint">Markdown: <code>**bold**</code> · <code>*italic*</code> · <code>`code`</code> · <code>- list</code></span>
+          <span class="md-counter" data-md-counter>0 / 5000</span>
+        </div>
       </label>
 
       <div style="margin-bottom: 0.5rem;">
@@ -149,4 +164,251 @@ const i = t(locale);
     margin-bottom: 0.5rem;
     color: var(--surbias-primary);
   }
+
+  /* Markdown toolbar */
+  .md-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.45rem;
+    background: var(--surbias-warm-light);
+    border: 1px solid var(--surbias-border);
+    border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    margin-top: 0.35rem;
+  }
+  .md-tool {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 30px;
+    height: 28px;
+    border-radius: 4px;
+    color: var(--surbias-text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .md-tool:hover { background: rgba(74,124,89,.12); color: var(--surbias-primary); }
+  .md-tool.is-active { background: var(--surbias-primary); color: #fff; }
+  .md-spacer { flex: 1; }
+  .md-preview-toggle {
+    width: auto;
+    padding: 0 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .post-form textarea[data-md-input] {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-top: 0;
+  }
+  .md-preview {
+    border: 1px solid var(--surbias-border);
+    border-top: none;
+    background: var(--surbias-warm-light);
+    padding: 0.85rem 1rem;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    min-height: 120px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--surbias-text);
+  }
+  .md-preview p { margin: 0 0 0.6rem; }
+  .md-preview p:last-child { margin-bottom: 0; }
+  .md-preview ul { padding-left: 1.25rem; margin: 0 0 0.6rem; }
+  .md-preview blockquote {
+    border-left: 3px solid var(--surbias-primary);
+    margin: 0 0 0.6rem;
+    padding-left: 0.85rem;
+    color: var(--surbias-text-muted);
+    font-style: italic;
+  }
+  .md-preview code {
+    background: var(--surbias-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em;
+  }
+  .md-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    font-size: 0.74rem;
+    color: var(--surbias-text-light);
+    flex-wrap: wrap;
+  }
+  .md-hint code { background: var(--surbias-warm-light); padding: 1px 4px; border-radius: 3px; font-size: 0.95em; }
+  .md-counter { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .md-counter.is-warning { color: var(--surbias-warm); }
+  .md-counter.is-danger { color: var(--surbias-danger); }
 </style>
+
+<script>
+  // Auto-save draft to localStorage (every 2s of inactivity)
+  (() => {
+    const titleEl = document.querySelector('input[name="title"]') as HTMLInputElement | null;
+    const bodyEl = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement | null;
+    const catEl = document.querySelector('select[name="category"]') as HTMLSelectElement | null;
+    if (!titleEl || !bodyEl) return;
+    const KEY = 'surbias_draft';
+
+    // Restore
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.title && !titleEl.value) titleEl.value = d.title;
+        if (d.body && !bodyEl.value) bodyEl.value = d.body;
+        if (d.category && catEl && !catEl.value) catEl.value = d.category;
+        if ((d.title || d.body) && bodyEl.dispatchEvent) {
+          bodyEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    } catch (_) {}
+
+    let timer: any;
+    function save() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          localStorage.setItem(KEY, JSON.stringify({
+            title: titleEl?.value || '',
+            body: bodyEl?.value || '',
+            category: catEl?.value || '',
+            ts: Date.now(),
+          }));
+        } catch (_) {}
+      }, 1500);
+    }
+    titleEl.addEventListener('input', save);
+    bodyEl.addEventListener('input', save);
+    catEl?.addEventListener('change', save);
+
+    // Clear on submit
+    const form = titleEl.closest('form');
+    form?.addEventListener('submit', () => {
+      try { localStorage.removeItem(KEY); } catch (_) {}
+    });
+  })();
+
+  // Markdown live preview + toolbar (full-page form only — inline form keeps it light)
+  (() => {
+    const textarea = document.querySelector('textarea[data-md-input]') as HTMLTextAreaElement;
+    if (!textarea) return;
+    const previewEl = document.querySelector('[data-md-preview]') as HTMLElement | null;
+    const previewBtn = document.querySelector('[data-md-preview-toggle]') as HTMLButtonElement | null;
+    const counterEl = document.querySelector('[data-md-counter]') as HTMLElement | null;
+    const max = parseInt(textarea.getAttribute('maxlength') || '5000', 10);
+
+    function escapeHtml(s: string): string {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function renderMarkdown(src: string): string {
+      const escaped = escapeHtml(src);
+      // basic block-level: lists, blockquotes, paragraphs
+      const lines = escaped.split('\n');
+      const out: string[] = [];
+      let inList = false;
+      let para: string[] = [];
+      function flushPara() {
+        if (para.length) {
+          let text = para.join(' ');
+          text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+          text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+          text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+          out.push('<p>' + text + '</p>');
+          para = [];
+        }
+      }
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) { flushPara(); if (inList) { out.push('</ul>'); inList = false; } continue; }
+        if (/^[-*]\s+/.test(line)) {
+          flushPara();
+          if (!inList) { out.push('<ul>'); inList = true; }
+          let item = line.replace(/^[-*]\s+/, '');
+          item = item.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`(.+?)`/g, '<code>$1</code>');
+          out.push('<li>' + item + '</li>');
+          continue;
+        }
+        if (/^>\s?/.test(line)) {
+          flushPara();
+          let q = line.replace(/^>\s?/, '');
+          q = q.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+          out.push('<blockquote>' + q + '</blockquote>');
+          continue;
+        }
+        para.push(line);
+      }
+      flushPara();
+      if (inList) out.push('</ul>');
+      return out.join('') || '<p style="color:var(--surbias-text-light);font-style:italic;">Nothing to preview yet.</p>';
+    }
+
+    function update() {
+      const len = textarea.value.length;
+      if (counterEl) {
+        counterEl.textContent = `${len} / ${max}`;
+        counterEl.classList.toggle('is-warning', len > max * 0.9 && len <= max);
+        counterEl.classList.toggle('is-danger', len > max);
+      }
+      if (previewEl && !previewEl.hidden) {
+        previewEl.innerHTML = renderMarkdown(textarea.value);
+      }
+    }
+    textarea.addEventListener('input', update);
+    update();
+
+    // Toolbar handlers
+    document.querySelectorAll('.md-tool[data-md]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const cmd = (btn as HTMLElement).dataset.md;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = textarea.value.slice(0, start);
+        const sel = textarea.value.slice(start, end) || 'text';
+        const after = textarea.value.slice(end);
+        let wrapped = sel;
+        if (cmd === 'bold') wrapped = `**${sel}**`;
+        else if (cmd === 'italic') wrapped = `*${sel}*`;
+        else if (cmd === 'code') wrapped = `\`${sel}\``;
+        else if (cmd === 'quote') wrapped = sel.split('\n').map(l => `> ${l}`).join('\n');
+        else if (cmd === 'list') wrapped = sel.split('\n').map(l => `- ${l}`).join('\n');
+        textarea.value = before + wrapped + after;
+        textarea.focus();
+        textarea.setSelectionRange(start, start + wrapped.length);
+        update();
+      });
+    });
+
+    // Keyboard shortcuts
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'i')) {
+        e.preventDefault();
+        const cmd = e.key === 'b' ? 'bold' : 'italic';
+        const btn = document.querySelector(`.md-tool[data-md="${cmd}"]`) as HTMLButtonElement | null;
+        btn?.click();
+      }
+    });
+
+    // Preview toggle
+    previewBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!previewEl) return;
+      previewEl.hidden = !previewEl.hidden;
+      previewBtn.classList.toggle('is-active', !previewEl.hidden);
+      if (!previewEl.hidden) update();
+    });
+  })();
+</script>

@@ -18,7 +18,21 @@ const i = t(locale);
       <span class="footer-sep" aria-hidden="true">|</span>
       <a href={localePath(locale, '/about')}>{i.nav.about}</a>
       <span class="footer-sep" aria-hidden="true">|</span>
-      <a href={localePath(locale, '/post/new')}>{i.nav.share}</a>
+      <a href={localePath(locale, '/top')}>Top</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/blog">Blog</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/survivorship-bias">What is survivorship bias?</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/famous-failures">Famous failures</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/faq">FAQ</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/glossary">Glossary</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/tags">Tags</a>
+      <span class="footer-sep" aria-hidden="true">|</span>
+      <a href="/random">Random</a>
       <span class="footer-sep" aria-hidden="true">|</span>
       <a href="/feed.xml">RSS</a>
       <span class="footer-sep" aria-hidden="true">|</span>
@@ -45,10 +59,11 @@ const i = t(locale);
       >
         ☕ {i.common.footer_coffee}
       </a>
+      <a href={localePath(locale, '/support')} class="footer-legal-link">Why donate?</a>
       <a href={localePath(locale, '/terms')} class="footer-legal-link">{i.common.terms}</a>
       <a href={localePath(locale, '/privacy')} class="footer-legal-link">{i.common.privacy}</a>
+      <a href="/press" class="footer-legal-link">Press kit</a>
       <a href="/api-docs" class="footer-legal-link">API</a>
-      <a href="/enterprise" class="footer-legal-link">Enterprise</a>
     </div>
 
   </div>

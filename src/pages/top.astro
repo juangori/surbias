@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import { getDb } from '../db';
+import { posts } from '../db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { postWithAuthor } from '../lib/post-query';
+import { getLocaleFromUrl, t, localePath } from '../i18n';
+
+const locale = getLocaleFromUrl(Astro.url);
+const i = t(locale);
+const db = getDb(env.DB);
+
+const url = Astro.url;
+const window_ = url.searchParams.get('window') || 'all'; // all | year | month | week
+const category = url.searchParams.get('category');
+
+const conditions = [eq(posts.status, 'published'), eq(posts.locale, locale)];
+if (category) conditions.push(eq(posts.category, category));
+
+const now = Math.floor(Date.now() / 1000);
+if (window_ === 'week') conditions.push(sql`${posts.createdAt} >= ${now - 7 * 86400}`);
+else if (window_ === 'month') conditions.push(sql`${posts.createdAt} >= ${now - 30 * 86400}`);
+else if (window_ === 'year') conditions.push(sql`${posts.createdAt} >= ${now - 365 * 86400}`);
+
+const where = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+const totalReactionsExpr = sql`(
+  COALESCE(json_extract(${posts.reactionCounts}, '$.metoo'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.hug'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.strength'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.respect'), 0) +
+  COALESCE(json_extract(${posts.reactionCounts}, '$.solidarity'), 0)
+)`;
+
+const results = await db
+  .select(postWithAuthor)
+  .from(posts)
+  .where(where)
+  .orderBy(sql`${totalReactionsExpr} DESC`, desc(posts.createdAt))
+  .limit(50);
+
+const titles: Record<string, string> = {
+  en: 'Top failure stories',
+  es: 'Top historias de fracaso',
+  de: 'Top-Misserfolgsgeschichten',
+  fr: 'Top des histoires d\'échec',
+  pt: 'Top histórias de fracasso',
+};
+const subs: Record<string, string> = {
+  en: 'The most-reacted failure stories on Surbias. Real people, real failures, no happy endings required.',
+  es: 'Las historias de fracaso con más reacciones en Surbias. Gente real, fracasos reales, sin final feliz obligatorio.',
+  de: 'Die meistreagierten Misserfolgsgeschichten auf Surbias. Echte Menschen, echte Misserfolge — kein Happy End nötig.',
+  fr: 'Les histoires d\'échec les plus réagies sur Surbias. Des vraies personnes, de vrais échecs — sans happy end obligatoire.',
+  pt: 'As histórias de fracasso mais reagidas no Surbias. Pessoas reais, fracassos reais, sem final feliz obrigatório.',
+};
+
+const title = titles[locale] || titles.en;
+const description = subs[locale] || subs.en;
+
+// Build window labels
+const windows = [
+  { id: 'all', en: 'All time', es: 'Siempre', de: 'Gesamt', fr: 'Tout', pt: 'Sempre' },
+  { id: 'year', en: 'This year', es: 'Este año', de: 'Dieses Jahr', fr: 'Cette année', pt: 'Este ano' },
+  { id: 'month', en: 'This month', es: 'Este mes', de: 'Dieser Monat', fr: 'Ce mois-ci', pt: 'Este mês' },
+  { id: 'week', en: 'This week', es: 'Esta semana', de: 'Diese Woche', fr: 'Cette semaine', pt: 'Esta semana' },
+];
+
+const itemListJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: title,
+  description,
+  numberOfItems: results.length,
+  itemListElement: results.slice(0, 20).map((p, idx) => {
+    const path = p.slug ? `/post/${p.slug}-${p.id}` : `/post/${p.id}`;
+    return {
+      '@type': 'ListItem',
+      position: idx + 1,
+      url: `https://surbias.com${localePath(locale, path)}`,
+      name: p.title,
+    };
+  }),
+};
+---
+
+<Base title={title} description={description} jsonLd={itemListJsonLd}>
+  <div style="max-width: 760px; margin: 0 auto;">
+    <header style="padding: 1.5rem 0 1rem;">
+      <h1 style="font-size: clamp(1.75rem, 4.5vw, 2.3rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem;">{title}</h1>
+      <p style="color: var(--surbias-text-muted); font-size: 0.95rem; margin: 0 0 1.25rem;">{description}</p>
+
+      <div class="quick-actions" role="tablist" aria-label="Time window">
+        {windows.map((w) => (
+          <a
+            href={`${localePath(locale, '/top')}${w.id === 'all' ? '' : `?window=${w.id}`}${category ? `${w.id === 'all' ? '?' : '&'}category=${category}` : ''}`}
+            class:list={['pill-btn', { active: window_ === w.id }]}
+            style={window_ === w.id ? 'background: var(--surbias-primary); color: #fff; border-color: var(--surbias-primary);' : ''}
+          >
+            {(w as any)[locale] || w.en}
+          </a>
+        ))}
+      </div>
+    </header>
+
+    {results.length === 0 ? (
+      <div class="empty-state">
+        <p class="empty-state-text">No stories yet for this window.</p>
+      </div>
+    ) : (
+      <ol class="top-list">
+        {results.map((p, idx) => (
+          <li class="top-list-item">
+            <span class="top-rank" aria-hidden="true">{idx + 1}</span>
+            <div style="flex:1;min-width:0;">
+              <PostCard locale={locale} post={p} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+</Base>
+
+<style>
+  .top-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .top-list-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .top-rank {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--surbias-primary);
+    background: var(--surbias-warm-light);
+    border-radius: 50%;
+    border: 1.5px solid rgba(74,124,89,.25);
+    margin-top: 0.5rem;
+  }
+  .top-list-item:nth-child(-n+3) .top-rank {
+    background: var(--surbias-warm);
+    color: #fff;
+    border-color: var(--surbias-warm);
+    box-shadow: 0 4px 14px rgba(184,134,11,0.3);
+  }
+  @media (max-width: 480px) {
+    .top-rank { width: 28px; height: 28px; font-size: 0.85rem; }
+  }
+</style>

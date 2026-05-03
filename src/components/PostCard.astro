@@ -1,5 +1,6 @@
 ---
 import { t, localePath, timeAgo, type Locale } from '../i18n';
+import { REACTION_TYPES } from '../db/schema';
 
 interface Props {
   locale: Locale;
@@ -24,20 +25,21 @@ const i = t(locale);
 const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(Number(post.createdAt) * 1000);
 const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
 const categoryLabel = i.categories[post.category as keyof typeof i.categories] || post.category;
-const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
+const bodyPreview = post.body.length > 220 ? post.body.slice(0, 220) + '…' : post.body;
 const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
+const fullUrl = `https://surbias.com${localePath(locale, postPath)}`;
 ---
 
-<article class="post-card">
+<article class="post-card" data-post-card data-post-id={post.id} data-post-title={post.title} data-post-url={fullUrl}>
   <a href={localePath(locale, postPath)} class="post-card-link" aria-label={post.title}></a>
   <div class="post-card-accent"></div>
 
   <!-- Metadata -->
   <div class="post-meta">
     <span class="category-badge">{categoryLabel}</span>
-    <span class="post-meta-sep">&bull;</span>
+    <span class="post-meta-sep" aria-hidden="true">&bull;</span>
     <span>{post.isAnonymous ? '---' : (post.userName || '---')}</span>
-    <span class="post-meta-sep">&bull;</span>
+    <span class="post-meta-sep" aria-hidden="true">&bull;</span>
     <span>{timeAgo(createdAt, locale)}</span>
   </div>
 
@@ -49,29 +51,22 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
   <!-- Body preview -->
   <p class="post-body-preview">{bodyPreview}</p>
 
-  <!-- Footer: reactions + bookmark + read more -->
+  <!-- Footer: reactions + bookmark + share + read more -->
   <div class="post-card-footer">
     <div class="reaction-bar">
-      <span class="reaction-btn" title={i.reactions.metoo}>
-        <span class="reaction-label">{i.reactions.metoo}</span>
-        <span class="reaction-count">{reactions.metoo || 0}</span>
-      </span>
-      <span class="reaction-btn" title={i.reactions.hug}>
-        <span class="reaction-label">{i.reactions.hug}</span>
-        <span class="reaction-count">{reactions.hug || 0}</span>
-      </span>
-      <span class="reaction-btn" title={i.reactions.strength}>
-        <span class="reaction-label">{i.reactions.strength}</span>
-        <span class="reaction-count">{reactions.strength || 0}</span>
-      </span>
-      <span class="reaction-btn" title={i.reactions.respect}>
-        <span class="reaction-label">{i.reactions.respect}</span>
-        <span class="reaction-count">{reactions.respect || 0}</span>
-      </span>
-      <span class="reaction-btn" title={i.reactions.solidarity}>
-        <span class="reaction-label">{i.reactions.solidarity}</span>
-        <span class="reaction-count">{reactions.solidarity || 0}</span>
-      </span>
+      {REACTION_TYPES.map((rType) => (
+        <button
+          class="reaction-btn"
+          data-reaction={rType}
+          data-post-id={post.id}
+          title={i.reactions[rType as keyof typeof i.reactions]}
+          aria-label={i.reactions[rType as keyof typeof i.reactions]}
+          type="button"
+        >
+          <span class="reaction-label">{i.reactions[rType as keyof typeof i.reactions]}</span>
+          <span class="reaction-count">{reactions[rType] || 0}</span>
+        </button>
+      ))}
     </div>
     <div class="post-card-actions">
       {(post.commentCount ?? 0) > 0 && (
@@ -81,17 +76,23 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
         </a>
       )}
       <button
+        class="share-card-btn"
+        data-share-card
+        type="button"
+        aria-label="Share"
+        title="Share"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
+      <button
         class:list={['bookmark-btn', { 'is-bookmarked': bookmarked }]}
         data-post-id={post.id}
         aria-label={bookmarked ? i.nav.saved : 'Save'}
         title={bookmarked ? i.nav.saved : 'Save'}
+        type="button"
       >
         <svg class="bookmark-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-        <span class="bookmark-label">{bookmarked ? i.nav.saved : 'Save'}</span>
       </button>
-      <a href={localePath(locale, postPath)} class="read-more-link">
-        {i.post.read_more} &rarr;
-      </a>
     </div>
   </div>
 </article>
@@ -100,7 +101,7 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
   .post-card-actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .comment-count-link {
@@ -108,17 +109,19 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
     align-items: center;
     gap: 3px;
     font-size: 0.8rem;
-    color: var(--color-text-muted);
+    color: var(--surbias-text-muted);
     text-decoration: none;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: color 0.15s;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
   }
 
   .comment-count-link:hover {
-    color: var(--color-primary);
+    color: var(--surbias-primary);
+    background: var(--surbias-warm-light);
   }
 
+  .share-card-btn,
   .bookmark-btn {
     display: inline-flex;
     align-items: center;
@@ -128,18 +131,20 @@ const postPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}
     cursor: pointer;
     font-family: inherit;
     font-size: 0.8rem;
-    color: var(--color-text-muted);
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: color 0.15s;
+    color: var(--surbias-text-muted);
+    padding: 6px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
     line-height: 1;
   }
 
+  .share-card-btn:hover,
   .bookmark-btn:hover {
-    color: var(--color-primary);
+    color: var(--surbias-primary);
+    background: var(--surbias-warm-light);
   }
 
   .bookmark-btn.is-bookmarked {
-    color: var(--color-primary);
+    color: var(--surbias-primary);
   }
 </style>

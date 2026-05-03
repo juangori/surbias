@@ -1,0 +1,50 @@
+---
+import { localePath, t, type Locale } from '../i18n';
+import { House, Search, SquarePen, Bookmark, User } from '@lucide/astro';
+
+interface Props {
+  locale: Locale;
+  isLoggedIn?: boolean;
+  currentPath?: string;
+}
+
+const { locale, isLoggedIn = false, currentPath = '' } = Astro.props;
+const i = t(locale);
+
+const homeHref = localePath(locale, '/');
+const searchHref = localePath(locale, '/search');
+const newHref = localePath(locale, '/post/new');
+const savedHref = localePath(locale, isLoggedIn ? '/saved' : '/login');
+const profileHref = localePath(locale, isLoggedIn ? '/profile' : '/login');
+
+function isActive(href: string): boolean {
+  if (!currentPath) return false;
+  const norm = currentPath.replace(/\/$/, '') || '/';
+  const target = href.replace(/\/$/, '') || '/';
+  return norm === target;
+}
+---
+
+<nav class="mobile-tabbar" aria-label="Primary mobile navigation">
+  <div class="mobile-tabbar-inner">
+    <a href={homeHref} aria-label={i.nav.home} aria-current={isActive(homeHref) ? 'page' : undefined}>
+      <House aria-hidden="true" />
+      <span class="tabbar-label">{i.nav.home}</span>
+    </a>
+    <a href={searchHref} aria-label={i.nav.search} aria-current={isActive(searchHref) ? 'page' : undefined}>
+      <Search aria-hidden="true" />
+      <span class="tabbar-label">{i.nav.search}</span>
+    </a>
+    <a href={newHref} class="tabbar-share" aria-label={i.post.share_title}>
+      <SquarePen aria-hidden="true" />
+    </a>
+    <a href={savedHref} aria-label={i.nav.saved} aria-current={isActive(savedHref) ? 'page' : undefined}>
+      <Bookmark aria-hidden="true" />
+      <span class="tabbar-label">{i.nav.saved}</span>
+    </a>
+    <a href={profileHref} aria-label={i.nav.profile} aria-current={isActive(profileHref) ? 'page' : undefined}>
+      <User aria-hidden="true" />
+      <span class="tabbar-label">{isLoggedIn ? i.nav.profile.split(' ')[0] : i.nav.login}</span>
+    </a>
+  </div>
+</nav>

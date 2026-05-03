@@ -18,11 +18,16 @@ const db = getDb(env.DB);
 
 // Auth check (optional — used for follow state)
 let currentUserId: string | null = null;
+let currentUserName: string | null = null;
 try {
   const auth = createAuth(env);
   const session = await auth.api.getSession({ headers: Astro.request.headers });
-  if (session?.user) currentUserId = session.user.id;
+  if (session?.user) {
+    currentUserId = session.user.id;
+    currentUserName = session.user.name || session.user.email || null;
+  }
 } catch (_) { /* ignore */ }
+const userInitial = (currentUserName || '?').trim().charAt(0).toUpperCase() || '?';
 
 // Fetch followed categories if logged in
 let followedCategorySet = new Set<string>();
@@ -109,6 +114,24 @@ const pinnedPosts = await db.select(postWithAuthor).from(posts)
 const turnstileSiteKey = env.TURNSTILE_SITE_KEY || '';
 const postError = url.searchParams.get('error') || undefined;
 
+// Homepage ItemList JSON-LD — top recent stories, helps Google understand the feed
+const homepageItemList = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: i.site.title + ' — ' + i.site.tagline,
+  description: i.site.description,
+  numberOfItems: results.length,
+  itemListElement: results.slice(0, 10).map((p, idx) => {
+    const path = p.slug ? `/post/${p.slug}-${p.id}` : `/post/${p.id}`;
+    return {
+      '@type': 'ListItem',
+      position: idx + 1,
+      url: `https://surbias.com${localePath(locale, path)}`,
+      name: p.title,
+    };
+  }),
+};
+
 // Failure of the Week: most-reacted post from last 7 days
 const sevenDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
 const fotwCandidates = await db.select(postWithAuthor).from(posts)
@@ -131,7 +154,26 @@ for (const p of fotwCandidates) {
 }
 ---
 
-<Base>
+<Base jsonLd={homepageItemList}>
+  <!-- First-visit hero (hidden by default; revealed by JS for new visitors) -->
+  <section class="welcome-hero" id="welcome-hero" aria-hidden="true">
+    <button class="welcome-hero-close" aria-label="Dismiss intro" data-welcome-dismiss type="button">×</button>
+    <div class="welcome-hero-emoji" aria-hidden="true">🫂</div>
+    <h2 class="welcome-hero-title">{i.about.title}</h2>
+    <p class="welcome-hero-text">{i.about.p3}</p>
+    <div class="welcome-hero-actions">
+      <a href={localePath(locale, '/post/new')} class="btn-cta">{i.common.share_cta}</a>
+      <a href={localePath(locale, '/about')} class="welcome-hero-link">{i.nav.about} →</a>
+    </div>
+    <div class="welcome-hero-stats">
+      <span><strong>{total}</strong> {i.common.stories}</span>
+      <span aria-hidden="true">·</span>
+      <span><strong>{totalMetoo}</strong> {i.common.metoos}</span>
+      <span aria-hidden="true">·</span>
+      <span>5 langs · 0 ads</span>
+    </div>
+  </section>
+
   <!-- Statement bar -->
   <div class="statement-bar">
     <p class="statement-text">{i.site.description}</p>
@@ -163,15 +205,17 @@ for (const p of fotwCandidates) {
 
     <!-- Feed -->
     <div class="feed">
-      <!-- Collapsed share button / login CTA -->
+      <!-- X-style composer (avatar + click-to-expand) / login CTA -->
       {currentUserId ? (
-        <div class="share-toggle-section">
-          <button class="share-toggle-btn" id="share-toggle" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
-            {i.common.share_cta}
-          </button>
-          <div class="inline-form-section" id="inline-form-wrapper" style="display: none;">
-            <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
+        <div class="composer-card" id="composer-card">
+          <div class="composer-avatar" aria-hidden="true">{userInitial}</div>
+          <div class="composer-content">
+            <button class="composer-trigger" id="share-toggle" type="button" aria-expanded="false" aria-controls="inline-form-wrapper">
+              {i.post.body_placeholder}
+            </button>
+            <div class="inline-form-section" id="inline-form-wrapper" style="display: none;">
+              <PostForm locale={locale} turnstileSiteKey={turnstileSiteKey} error={postError} inline={true} />
+            </div>
           </div>
         </div>
       ) : (
@@ -181,6 +225,24 @@ for (const p of fotwCandidates) {
             {i.auth.login_required}
           </a>
         </div>
+      )}
+
+      {failureOfWeek && maxReactions > 0 && page === 1 && !category && sort === 'recent' && (
+        <article class="fotd-card" data-post-card data-post-id={failureOfWeek.id} data-post-title={failureOfWeek.title} data-post-url={`https://surbias.com${localePath(locale, failureOfWeek.slug ? `/post/${failureOfWeek.slug}-${failureOfWeek.id}` : `/post/${failureOfWeek.id}`)}`}>
+          <p class="fotd-label">🏅 {i.common.failure_of_week}</p>
+          <h2 class="fotd-title">
+            <a href={localePath(locale, failureOfWeek.slug ? `/post/${failureOfWeek.slug}-${failureOfWeek.id}` : `/post/${failureOfWeek.id}`)}>
+              {failureOfWeek.title}
+            </a>
+          </h2>
+          <p class="fotd-meta">
+            <span class="category-badge">{i.categories[failureOfWeek.category as keyof typeof i.categories] || failureOfWeek.category}</span>
+            <span class="post-meta-sep" aria-hidden="true">•</span>
+            <span>{failureOfWeek.isAnonymous ? '---' : (failureOfWeek.userName || '---')}</span>
+            <span class="post-meta-sep" aria-hidden="true">•</span>
+            <span>{maxReactions} reactions</span>
+          </p>
+        </article>
       )}
 
       {pinnedPosts.length > 0 && (
@@ -194,7 +256,14 @@ for (const p of fotwCandidates) {
         </div>
       )}
 
-      <div id="posts-container" aria-live="polite" data-empty-text={i.common.empty} data-reaction-labels={JSON.stringify(i.reactions)}>
+      <div
+        id="posts-container"
+        aria-live="polite"
+        data-empty-text={i.common.empty}
+        data-reaction-labels={JSON.stringify(i.reactions)}
+        data-current-page={page}
+        data-total-pages={totalPages}
+      >
         <div class="posts-grid">
           {results.length === 0 ? (
             <div class="empty-state">
@@ -210,33 +279,33 @@ for (const p of fotwCandidates) {
           )}
         </div>
 
-        <!-- Pagination -->
-        {totalPages > 1 && (
-          <div class="pagination">
-            {page > 1 && (
-              <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
-                &larr; {i.common.previous}
-              </a>
-            )}
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, idx) => {
-              const start = Math.max(1, Math.min(page - 2, totalPages - 4));
-              const p = start + idx;
-              if (p > totalPages) return null;
-              return (
-                <a
-                  href={`${localePath(locale, '/')}?page=${p}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`}
-                  class:list={['pagination-num', { active: p === page }]}
-                >
-                  {p}
-                </a>
-              );
-            })}
-            {page < totalPages && (
-              <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
-                {i.common.next} &rarr;
-              </a>
-            )}
+        <!-- Infinite scroll loader -->
+        <div class="feed-loading" id="feed-loading">
+          <div class="skeleton-card">
+            <div class="skeleton-line short"></div>
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line full"></div>
+            <div class="skeleton-line partial"></div>
           </div>
+        </div>
+        <div id="feed-sentinel" style="height: 1px;"></div>
+
+        <!-- Pagination fallback (no JS) -->
+        {totalPages > 1 && (
+          <noscript>
+            <div class="pagination">
+              {page > 1 && (
+                <a href={`${localePath(locale, '/')}?page=${page - 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
+                  &larr; {i.common.previous}
+                </a>
+              )}
+              {page < totalPages && (
+                <a href={`${localePath(locale, '/')}?page=${page + 1}${category ? `&category=${category}` : ''}${sort !== 'recent' ? `&sort=${sort}` : ''}`} class="pagination-btn">
+                  {i.common.next} &rarr;
+                </a>
+              )}
+            </div>
+          </noscript>
         )}
       </div>
     </div>
@@ -308,6 +377,26 @@ for (const p of fotwCandidates) {
 </Base>
 
 <script>
+  // First-visit welcome hero
+  (() => {
+    try {
+      const visits = parseInt(localStorage.getItem('surbias_visits') || '0', 10);
+      const dismissed = localStorage.getItem('surbias_welcome_dismissed') === '1';
+      const hero = document.getElementById('welcome-hero');
+      if (hero && visits <= 2 && !dismissed) {
+        hero.classList.add('is-visible');
+        hero.setAttribute('aria-hidden', 'false');
+      }
+      const close = hero?.querySelector('[data-welcome-dismiss]');
+      close?.addEventListener('click', () => {
+        hero?.classList.remove('is-visible');
+        try { localStorage.setItem('surbias_welcome_dismissed', '1'); } catch (_) {}
+      });
+    } catch (_) {}
+  })();
+</script>
+
+<script>
   (() => {
     const toggleBtn = document.getElementById('share-toggle');
     const formWrapper = document.getElementById('inline-form-wrapper');
@@ -316,6 +405,7 @@ for (const p of fotwCandidates) {
         const isOpen = formWrapper.style.display !== 'none';
         formWrapper.style.display = isOpen ? 'none' : '';
         toggleBtn.classList.toggle('is-open', !isOpen);
+        toggleBtn.setAttribute('aria-expanded', String(!isOpen));
         if (!isOpen) {
           const input = formWrapper.querySelector('input[name="title"]') as HTMLInputElement | null;
           input?.focus();
@@ -390,89 +480,79 @@ for (const p of fotwCandidates) {
       return { metoo: 'Me too', hug: 'Hug', strength: 'Strength', respect: 'Respect', solidarity: 'Solidarity' };
     }
 
-    function getReadMoreLabel(): string {
-      const lang = document.documentElement.lang || 'en';
-      const labels: Record<string, string> = {
-        en: 'Read more',
-        es: 'Leer m\u00e1s',
-        de: 'Weiterlesen',
-        fr: 'Lire la suite',
-        pt: 'Ler mais',
-      };
-      return labels[lang] || labels['en'];
+    function escHtml(s: string): string {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function renderCard(post: Post): string {
       const createdAtMs = post.createdAt * 1000;
       const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
-      const bodyPreview = post.body.length > 250 ? post.body.slice(0, 250) + '...' : post.body;
+      const bodyPreview = post.body.length > 220 ? post.body.slice(0, 220) + '…' : post.body;
       const categoryLabel =
         post.category.charAt(0).toUpperCase() + post.category.slice(1);
       const authorName = post.userName || post.user_name;
       const author = post.isAnonymous ? '---' : (authorName || '---');
       const slugPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
       const postPath = getLocalePath(slugPath);
+      const fullUrl = window.location.origin + postPath;
       const comments = post.commentCount ?? post.comment_count ?? 0;
       const rl = getReactionLabels();
-      const readMore = getReadMoreLabel();
+      const reactionsHtml = ['metoo','hug','strength','respect','solidarity'].map((rt) => `
+        <button class="reaction-btn" type="button" data-reaction="${rt}" data-post-id="${post.id}" title="${escHtml(rl[rt])}" aria-label="${escHtml(rl[rt])}">
+          <span class="reaction-label">${escHtml(rl[rt])}</span>
+          <span class="reaction-count">${reactions[rt] || 0}</span>
+        </button>`).join('');
 
       return `
-        <article class="post-card">
+        <article class="post-card" data-post-card data-post-id="${post.id}" data-post-title="${escHtml(post.title)}" data-post-url="${escHtml(fullUrl)}">
+          <a href="${postPath}" class="post-card-link" aria-label="${escHtml(post.title)}"></a>
           <div class="post-card-accent"></div>
           <div class="post-meta">
             <span class="category-badge">${categoryLabel}</span>
             <span class="post-meta-sep">&bull;</span>
-            <span>${author}</span>
+            <span>${escHtml(author)}</span>
             <span class="post-meta-sep">&bull;</span>
             <span>${timeAgo(createdAtMs)}</span>
           </div>
-          <h3><a href="${postPath}">${post.title}</a></h3>
-          <p class="post-body-preview">${bodyPreview}</p>
+          <h3><a href="${postPath}">${escHtml(post.title)}</a></h3>
+          <p class="post-body-preview">${escHtml(bodyPreview)}</p>
           <div class="post-card-footer">
-            <div class="reaction-bar">
-              <span class="reaction-btn" title="${rl.metoo}">
-                <span class="reaction-label">${rl.metoo}</span>
-                <span class="reaction-count">${reactions.metoo || 0}</span>
-              </span>
-              <span class="reaction-btn" title="${rl.hug}">
-                <span class="reaction-label">${rl.hug}</span>
-                <span class="reaction-count">${reactions.hug || 0}</span>
-              </span>
-              <span class="reaction-btn" title="${rl.strength}">
-                <span class="reaction-label">${rl.strength}</span>
-                <span class="reaction-count">${reactions.strength || 0}</span>
-              </span>
-              <span class="reaction-btn" title="${rl.respect}">
-                <span class="reaction-label">${rl.respect}</span>
-                <span class="reaction-count">${reactions.respect || 0}</span>
-              </span>
-              <span class="reaction-btn" title="${rl.solidarity}">
-                <span class="reaction-label">${rl.solidarity}</span>
-                <span class="reaction-count">${reactions.solidarity || 0}</span>
-              </span>
+            <div class="reaction-bar">${reactionsHtml}</div>
+            <div class="post-card-actions">
+              ${comments > 0 ? `<a href="${postPath}" class="comment-count-link" title="comments"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${comments}</span></a>` : ''}
+              <button class="share-card-btn" data-share-card type="button" aria-label="Share" title="Share">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </button>
+              <button class="bookmark-btn" data-post-id="${post.id}" type="button" aria-label="Save" title="Save">
+                <svg class="bookmark-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </button>
             </div>
-            ${comments > 0 ? `<a href="${postPath}" class="comment-count-link" style="display:inline-flex;align-items:center;gap:3px;font-size:0.8rem;color:var(--color-text-muted);text-decoration:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${comments}</span></a>` : ''}
-            <a href="${postPath}" class="read-more-link">${readMore} &rarr;</a>
           </div>
         </article>`;
     }
 
-    function renderGrid(data: { posts: Post[]; total: number }): string {
-      if (!data.posts.length) {
-        const container = document.getElementById('posts-container');
-        const emptyText = container?.dataset.emptyText || 'No stories yet. Be the first to share.';
-        return `<div class="notice notice-info">${emptyText}</div>`;
-      }
-      return `<div class="posts-grid">${data.posts.map(renderCard).join('')}</div>`;
+    function renderRow(posts: Post[]): string {
+      return posts.map(renderCard).join('');
     }
 
     // Shared state
     let currentCategory = '';
     let currentSort = 'recent';
+    let currentPage = 1;
+    let totalPages = 1;
+    let isLoadingMore = false;
+    let reachedEnd = false;
 
     const initParams = new URLSearchParams(window.location.search);
     currentCategory = initParams.get('category') ?? '';
     currentSort = initParams.get('sort') ?? 'recent';
+
+    const containerInit = document.getElementById('posts-container');
+    if (containerInit) {
+      currentPage = parseInt(containerInit.dataset.currentPage || '1', 10) || 1;
+      totalPages = parseInt(containerInit.dataset.totalPages || '1', 10) || 1;
+      reachedEnd = currentPage >= totalPages;
+    }
 
     async function loadPosts(category: string, sort: string) {
       const locale = getLocale();
@@ -488,14 +568,66 @@ for (const p of fotwCandidates) {
       try {
         const res = await fetch(`/api/posts?${params}`);
         if (!res.ok) throw new Error('fetch failed');
-        const data = await res.json() as { posts: Post[]; total: number };
-        container.innerHTML = renderGrid(data);
+        const data = await res.json() as { posts: Post[]; total: number; totalPages?: number; page?: number };
+        const grid = container.querySelector('.posts-grid') as HTMLElement | null;
+        if (grid) {
+          if (data.posts.length) {
+            grid.innerHTML = renderRow(data.posts);
+          } else {
+            const emptyText = container.dataset.emptyText || 'No stories yet.';
+            grid.innerHTML = `<div class="empty-state"><p class="empty-state-text">${emptyText}</p></div>`;
+          }
+        }
+        currentPage = data.page || 1;
+        totalPages = data.totalPages || 1;
+        reachedEnd = currentPage >= totalPages;
+        const sentinel = document.getElementById('feed-sentinel');
+        if (sentinel) sentinel.style.display = reachedEnd ? 'none' : '';
       } catch (err) {
         console.error('Posts fetch failed:', err);
-        // leave current content
       } finally {
         container.style.opacity = '';
       }
+    }
+
+    async function loadMore() {
+      if (isLoadingMore || reachedEnd) return;
+      isLoadingMore = true;
+      const loading = document.getElementById('feed-loading');
+      if (loading) loading.classList.add('is-active');
+
+      const nextPage = currentPage + 1;
+      const locale = getLocale();
+      const params = new URLSearchParams({ locale, page: String(nextPage) });
+      if (currentCategory) params.set('category', currentCategory);
+      if (currentSort && currentSort !== 'recent') params.set('sort', currentSort);
+
+      try {
+        const res = await fetch(`/api/posts?${params}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json() as { posts: Post[]; totalPages?: number; page?: number };
+        const grid = document.querySelector('#posts-container .posts-grid') as HTMLElement | null;
+        if (grid && data.posts.length) {
+          grid.insertAdjacentHTML('beforeend', renderRow(data.posts));
+        }
+        currentPage = data.page || nextPage;
+        totalPages = data.totalPages || totalPages;
+        reachedEnd = currentPage >= totalPages || (data.posts || []).length === 0;
+      } catch (err) {
+        console.error('Load more failed:', err);
+      } finally {
+        if (loading) loading.classList.remove('is-active');
+        isLoadingMore = false;
+      }
+    }
+
+    // IntersectionObserver for infinite scroll
+    const sentinel = document.getElementById('feed-sentinel');
+    if (sentinel && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      }, { rootMargin: '600px 0px' });
+      io.observe(sentinel);
     }
 
     function buildUrl(category: string, sort: string): string {
@@ -535,6 +667,8 @@ for (const p of fotwCandidates) {
       if (!target || (!target.classList.contains('sidebar-cat-item') && !target.classList.contains('category-pill'))) return;
       e.preventDefault();
       currentCategory = (target as HTMLElement).dataset.category ?? '';
+      currentPage = 1;
+      reachedEnd = false;
       setActivePill(currentCategory);
       const newUrl = buildUrl(currentCategory, currentSort);
       history.pushState({ category: currentCategory, sort: currentSort }, '', newUrl);
@@ -547,6 +681,8 @@ for (const p of fotwCandidates) {
       if (!target) return;
       e.preventDefault();
       currentSort = (target as HTMLElement).dataset.sort ?? 'recent';
+      currentPage = 1;
+      reachedEnd = false;
       setActiveSort(currentSort);
       const newUrl = buildUrl(currentCategory, currentSort);
       history.pushState({ category: currentCategory, sort: currentSort }, '', newUrl);
@@ -611,6 +747,89 @@ for (const p of fotwCandidates) {
 </script>
 
 <style>
+  .welcome-hero {
+    position: relative;
+    text-align: center;
+    padding: 2.25rem 1.5rem 1.75rem;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(140deg, #f4faf6 0%, #ecf5ef 50%, #f0f7f2 100%);
+    border: 1.5px solid var(--surbias-border);
+    border-radius: var(--radius-xl);
+    display: none;
+  }
+  [data-theme="dark"] .welcome-hero {
+    background: linear-gradient(140deg, #1a2520 0%, #1d2922 50%, #1a2520 100%);
+  }
+  .welcome-hero.is-visible { display: block; }
+  .welcome-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--surbias-primary), var(--surbias-warm), transparent);
+    border-radius: 0 0 9999px 9999px;
+    opacity: 0.7;
+  }
+  .welcome-hero-emoji {
+    font-size: 2.6rem;
+    line-height: 1;
+    margin-bottom: 0.6rem;
+    filter: drop-shadow(0 2px 6px rgba(74,124,89,.25));
+  }
+  .welcome-hero-title {
+    font-size: clamp(1.4rem, 4vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.6rem;
+    color: var(--surbias-text);
+  }
+  .welcome-hero-text {
+    color: var(--surbias-text-muted);
+    line-height: 1.65;
+    max-width: 540px;
+    margin: 0 auto 1.25rem;
+    font-size: 0.95rem;
+  }
+  .welcome-hero-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .welcome-hero-link {
+    color: var(--surbias-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .welcome-hero-link:hover { text-decoration: underline; }
+  .welcome-hero-stats {
+    display: inline-flex;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--surbias-text-light);
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .welcome-hero-stats strong { color: var(--surbias-primary); font-weight: 700; }
+  .welcome-hero-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--surbias-text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+  }
+  .welcome-hero-close:hover { background: rgba(0,0,0,0.06); color: var(--surbias-text); }
+
   .share-toggle-section {
     margin-bottom: 1.25rem;
   }

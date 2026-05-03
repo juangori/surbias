@@ -1,78 +1,282 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getLocaleFromUrl, t } from '../../i18n';
 import { getDb } from '../../db';
 import { posts, users, comments, reactions } from '../../db/schema';
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, gte } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 
-const locale = getLocaleFromUrl(Astro.url);
-const i = t(locale);
 const db = getDb(env.DB);
 
-const totalPosts = (await db.select({ c: sql<number>`count(*)` }).from(posts).where(eq(posts.status, 'published')))[0]?.c || 0;
-const totalUsers = (await db.select({ c: sql<number>`count(*)` }).from(users))[0]?.c || 0;
-const totalComments = (await db.select({ c: sql<number>`count(*)` }).from(comments))[0]?.c || 0;
-const totalReactions = (await db.select({ c: sql<number>`count(*)` }).from(reactions))[0]?.c || 0;
+const [postsRow] = await db.select({ c: sql<number>`count(*)` }).from(posts).where(eq(posts.status, 'published'));
+const [usersRow] = await db.select({ c: sql<number>`count(*)` }).from(users);
+const [commentsRow] = await db.select({ c: sql<number>`count(*)` }).from(comments);
+const [reactionsRow] = await db.select({ c: sql<number>`count(*)` }).from(reactions);
+const totalPosts = postsRow?.c || 0;
+const totalUsers = usersRow?.c || 0;
+const totalComments = commentsRow?.c || 0;
+const totalReactions = reactionsRow?.c || 0;
 
-// Posts per category
-const catStats = await db.select({ category: posts.category, count: sql<number>`count(*)` })
-  .from(posts).where(eq(posts.status, 'published')).groupBy(posts.category);
+const catStats = await db
+  .select({ category: posts.category, count: sql<number>`count(*)` })
+  .from(posts)
+  .where(eq(posts.status, 'published'))
+  .groupBy(posts.category);
+catStats.sort((a, b) => b.count - a.count);
 
-// Posts per locale
-const localeStats = await db.select({ locale: posts.locale, count: sql<number>`count(*)` })
-  .from(posts).where(eq(posts.status, 'published')).groupBy(posts.locale);
+const localeStats = await db
+  .select({ locale: posts.locale, count: sql<number>`count(*)` })
+  .from(posts)
+  .where(eq(posts.status, 'published'))
+  .groupBy(posts.locale);
+localeStats.sort((a, b) => b.count - a.count);
+
+const reactionStats = await db
+  .select({ type: reactions.type, count: sql<number>`count(*)` })
+  .from(reactions)
+  .groupBy(reactions.type);
+reactionStats.sort((a, b) => b.count - a.count);
+
+// Activity last 7 days (posts per day)
+const sevenDaysAgo = new Date(Date.now() - 7 * 86400 * 1000);
+const recentPosts = await db
+  .select({ createdAt: posts.createdAt })
+  .from(posts)
+  .where(gte(posts.createdAt, sevenDaysAgo));
+const dailyBuckets: Record<string, number> = {};
+for (let i = 6; i >= 0; i--) {
+  const d = new Date(Date.now() - i * 86400 * 1000);
+  const key = d.toISOString().split('T')[0];
+  dailyBuckets[key] = 0;
+}
+for (const p of recentPosts) {
+  const ts = p.createdAt instanceof Date ? p.createdAt : new Date(Number(p.createdAt) * 1000);
+  const key = ts.toISOString().split('T')[0];
+  if (key in dailyBuckets) dailyBuckets[key]++;
+}
+const dailyMax = Math.max(1, ...Object.values(dailyBuckets));
+
+// Engagement ratios
+const reactionsPerStory = totalPosts > 0 ? (totalReactions / totalPosts).toFixed(1) : '0';
+const commentsPerStory = totalPosts > 0 ? (totalComments / totalPosts).toFixed(1) : '0';
+
+const reactionEmojis: Record<string, string> = { metoo: '🤝', hug: '🫂', strength: '💪', respect: '🙇', solidarity: '✊' };
+const reactionLabels: Record<string, string> = { metoo: 'Me too', hug: 'Hug', strength: 'Strength', respect: 'Respect', solidarity: 'Solidarity' };
+const localeNames: Record<string, string> = { en: 'English', es: 'Español', de: 'Deutsch', fr: 'Français', pt: 'Português' };
+const categoryEmojis: Record<string, string> = { career: '💼', business: '📈', education: '🎓', relationships: '❤️', health: '🩺', financial: '💰', other: '✨' };
+
+const lastUpdated = new Date().toISOString();
 ---
 
-<Base title="Stats">
-  <div style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
-    <h1 style="margin-bottom: 2rem;">Community Stats</h1>
+<Base
+  title="Community stats"
+  description="Live numbers from Surbias: stories, reactions, comments, languages, daily activity. Updated whenever this page loads."
+>
+  <div class="stats-page">
+    <header class="stats-header">
+      <p class="pillar-eyebrow">Community</p>
+      <h1>Surbias by the numbers</h1>
+      <p class="stats-sub">Live data — refreshed on every page load. No vanity metrics, just what's actually happening on the site.</p>
+    </header>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-      <div class="sidebar-card" style="text-align: center;">
-        <p class="stat-number">{totalPosts}</p>
-        <p class="stat-label">Stories</p>
+    <section class="stats-grid">
+      <div class="stat-tile">
+        <span class="stat-tile-num">{totalPosts.toLocaleString()}</span>
+        <span class="stat-tile-label">stories</span>
       </div>
-      <div class="sidebar-card" style="text-align: center;">
-        <p class="stat-number">{totalUsers}</p>
-        <p class="stat-label">Users</p>
+      <div class="stat-tile">
+        <span class="stat-tile-num">{totalReactions.toLocaleString()}</span>
+        <span class="stat-tile-label">reactions</span>
       </div>
-      <div class="sidebar-card" style="text-align: center;">
-        <p class="stat-number">{totalComments}</p>
-        <p class="stat-label">Comments</p>
+      <div class="stat-tile">
+        <span class="stat-tile-num">{totalComments.toLocaleString()}</span>
+        <span class="stat-tile-label">comments</span>
       </div>
-      <div class="sidebar-card" style="text-align: center;">
-        <p class="stat-number">{totalReactions}</p>
-        <p class="stat-label">Reactions</p>
+      <div class="stat-tile">
+        <span class="stat-tile-num">{totalUsers.toLocaleString()}</span>
+        <span class="stat-tile-label">accounts</span>
       </div>
-    </div>
+    </section>
 
-    <h2>Stories by Category</h2>
-    <div style="margin-bottom: 2rem;">
-      {catStats.map(s => (
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-          <span style="width: 120px; font-size: 0.9rem; text-transform: capitalize;">{s.category}</span>
-          <div style="flex: 1; background: var(--surbias-warm-light); border-radius: var(--radius-pill); height: 24px; overflow: hidden;">
-            <div style={`width: ${Math.min(100, (s.count / Math.max(totalPosts, 1)) * 100)}%; background: var(--surbias-primary); height: 100%; border-radius: var(--radius-pill); min-width: 24px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;`}>
-              <span style="color: white; font-size: 0.75rem; font-weight: 600;">{s.count}</span>
+    <section class="stat-block">
+      <h2>Engagement ratio</h2>
+      <p class="stat-note">For every story shared, the community responds with…</p>
+      <div class="stats-grid stats-grid--small">
+        <div class="stat-tile">
+          <span class="stat-tile-num">{reactionsPerStory}</span>
+          <span class="stat-tile-label">reactions / story</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-num">{commentsPerStory}</span>
+          <span class="stat-tile-label">comments / story</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="stat-block">
+      <h2>Last 7 days</h2>
+      <p class="stat-note">Stories shared per day</p>
+      <div class="bar-chart">
+        {Object.entries(dailyBuckets).map(([day, count]) => {
+          const pct = (count / dailyMax) * 100;
+          const label = new Date(day).toLocaleDateString('en-US', { weekday: 'short' });
+          return (
+            <div class="bar-col">
+              <div class="bar-track">
+                <div class="bar-fill" style={`height: ${Math.max(pct, count > 0 ? 6 : 0)}%;`} title={`${count} posts`}></div>
+              </div>
+              <span class="bar-count">{count}</span>
+              <span class="bar-label">{label}</span>
             </div>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="stat-block">
+      <h2>By category</h2>
+      {catStats.map((s) => (
+        <div class="row">
+          <span class="row-label">{categoryEmojis[s.category] || '•'} {s.category}</span>
+          <div class="row-bar">
+            <div class="row-fill" style={`width: ${(s.count / Math.max(totalPosts, 1)) * 100}%;`}></div>
           </div>
+          <span class="row-count">{s.count}</span>
         </div>
       ))}
-    </div>
+    </section>
 
-    <h2>Stories by Language</h2>
-    <div>
-      {localeStats.map(s => (
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-          <span style="width: 80px; font-size: 0.9rem; text-transform: uppercase;">{s.locale}</span>
-          <div style="flex: 1; background: var(--surbias-warm-light); border-radius: var(--radius-pill); height: 24px; overflow: hidden;">
-            <div style={`width: ${Math.min(100, (s.count / Math.max(totalPosts, 1)) * 100)}%; background: var(--surbias-accent); height: 100%; border-radius: var(--radius-pill); min-width: 24px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;`}>
-              <span style="color: white; font-size: 0.75rem; font-weight: 600;">{s.count}</span>
+    <section class="stat-block">
+      <h2>Reactions breakdown</h2>
+      {reactionStats.map((s) => {
+        const max = reactionStats[0]?.count || 1;
+        return (
+          <div class="row">
+            <span class="row-label">{reactionEmojis[s.type] || '💚'} {reactionLabels[s.type] || s.type}</span>
+            <div class="row-bar">
+              <div class="row-fill row-fill--warm" style={`width: ${(s.count / max) * 100}%;`}></div>
             </div>
+            <span class="row-count">{s.count}</span>
           </div>
+        );
+      })}
+    </section>
+
+    <section class="stat-block">
+      <h2>By language</h2>
+      {localeStats.map((s) => (
+        <div class="row">
+          <span class="row-label">{localeNames[s.locale] || s.locale}</span>
+          <div class="row-bar">
+            <div class="row-fill row-fill--accent" style={`width: ${(s.count / Math.max(totalPosts, 1)) * 100}%;`}></div>
+          </div>
+          <span class="row-count">{s.count}</span>
         </div>
       ))}
-    </div>
+    </section>
+
+    <p class="stats-footer">
+      Last loaded: <time datetime={lastUpdated}>{lastUpdated.replace('T', ' ').slice(0, 16)} UTC</time>.
+      Open data — feel free to screenshot or embed.
+    </p>
   </div>
 </Base>
+
+<style>
+  .stats-page { max-width: 760px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  .stats-header { margin-bottom: 2rem; }
+  .pillar-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--surbias-warm); margin: 0 0 0.5rem; }
+  .stats-header h1 { font-size: clamp(1.85rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; line-height: 1.2; }
+  .stats-sub { color: var(--surbias-text-muted); margin: 0; font-size: 1rem; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .stats-grid--small { grid-template-columns: repeat(2, 1fr); }
+  .stat-tile {
+    text-align: center;
+    padding: 1.25rem 0.5rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+  }
+  .stat-tile-num {
+    display: block;
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--surbias-primary);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-tile-label { display: block; font-size: 0.78rem; color: var(--surbias-text-muted); margin-top: 0.4rem; }
+
+  .stat-block { margin-bottom: 2rem; }
+  .stat-block h2 { font-size: 1.2rem; font-weight: 700; margin: 0 0 0.4rem; }
+  .stat-note { color: var(--surbias-text-muted); font-size: 0.88rem; margin: 0 0 0.85rem; }
+
+  .bar-chart {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    align-items: end;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    height: 200px;
+  }
+  .bar-col { display: flex; flex-direction: column; align-items: center; height: 100%; gap: 0.25rem; }
+  .bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+  .bar-fill {
+    width: 100%;
+    background: linear-gradient(180deg, var(--surbias-primary), var(--surbias-accent));
+    border-radius: 4px 4px 0 0;
+    min-height: 0;
+    transition: height 0.4s var(--ease-out);
+  }
+  .bar-count { font-size: 0.75rem; font-weight: 700; color: var(--surbias-text); font-variant-numeric: tabular-nums; }
+  .bar-label { font-size: 0.7rem; color: var(--surbias-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 130px 1fr 50px;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .row-label { font-size: 0.88rem; color: var(--surbias-text); text-transform: capitalize; font-weight: 500; }
+  .row-bar {
+    height: 18px;
+    background: var(--surbias-warm-light);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .row-fill {
+    height: 100%;
+    background: var(--surbias-primary);
+    border-radius: 9999px;
+    transition: width 0.4s var(--ease-out);
+  }
+  .row-fill--warm { background: var(--surbias-warm); }
+  .row-fill--accent { background: var(--surbias-accent); }
+  .row-count { font-size: 0.85rem; font-weight: 700; color: var(--surbias-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .stats-footer {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surbias-border);
+    color: var(--surbias-text-light);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stat-tile-num { font-size: 1.5rem; }
+    .row { grid-template-columns: 100px 1fr 40px; gap: 0.5rem; }
+    .row-label { font-size: 0.8rem; }
+    .bar-chart { height: 150px; padding: 0.75rem; gap: 0.3rem; }
+  }
+</style>

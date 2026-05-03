@@ -1,0 +1,167 @@
+---
+import Base from '../layouts/Base.astro';
+import SupportCTA from '../components/SupportCTA.astro';
+
+const faqs = [
+  {
+    q: 'What is Surbias?',
+    a: 'Surbias is a community where people share real failure stories — without needing a happy ending. The name is short for "Survivorship Bias Destroyer." It exists to remind people that failing is normal and the success stories we read are a tiny minority.',
+  },
+  {
+    q: 'Is Surbias free?',
+    a: 'Yes — 100% free. No ads, no paywall, no tracking. The platform is funded by voluntary tips on Ko-fi. If it helps you, you can support it at /support.',
+  },
+  {
+    q: 'Do I have to use my real name?',
+    a: 'No. Posts are anonymous by default. You can choose to attach your name when you post if you want, but anonymous is the default and most stories are anonymous.',
+  },
+  {
+    q: 'Why are reactions called "me too" and "hug" instead of "like"?',
+    a: 'Likes don\'t fit. When someone shares a failure, you don\'t "like" it — you relate, you empathize, you respect. The five reactions (me too, hug, strength, respect, solidarity) are designed to mirror what humans actually feel when they read a vulnerable story.',
+  },
+  {
+    q: 'Can I delete my story later?',
+    a: 'Yes. Authors can delete their own posts at any time. Account deletion is also available in settings (GDPR-compliant).',
+  },
+  {
+    q: 'What languages does Surbias support?',
+    a: 'English, Spanish, German, French, and Portuguese. The interface and the stories are localized — when you switch language, you see stories in that language.',
+  },
+  {
+    q: 'How is moderation handled?',
+    a: 'A combination of automated rules (blocked words, link limits, rate limiting) and a community flag system. If 5 people flag a story, it\'s hidden pending admin review. We\'re strict about hate speech and personal attacks; we\'re permissive about messy, painful, real stories.',
+  },
+  {
+    q: 'Will my story be used to train AI models?',
+    a: 'We don\'t sell or license stories to AI training providers. We do publish public stories with appropriate metadata so search engines and assistants can surface them — but commercial training datasets are explicitly out of scope.',
+  },
+  {
+    q: 'Can companies use Surbias for internal post-mortems?',
+    a: 'There\'s an Enterprise concept (private failure-story spaces for teams) but no product yet. If you\'re interested, email hello@surbias.com.',
+  },
+  {
+    q: 'How do I support Surbias?',
+    a: 'Three ways, in order of impact: (1) share a story, yours or someone you know\'s; (2) tell one friend about it; (3) leave a tip on Ko-fi. The first two help more than the tip.',
+  },
+  {
+    q: 'Why doesn\'t Surbias have likes / follower counts / a leaderboard?',
+    a: 'Engagement metrics are designed to make people perform. Surbias is designed to make people honest. Likes and follower counts would corrupt the incentive — people would post for status instead of catharsis. So we left them out on purpose.',
+  },
+  {
+    q: 'I posted a story and nobody reacted. Why?',
+    a: 'Honestly: the platform is small. As of now there are hundreds of users, not millions. Your story still matters — and it stays in the database, indexed by search, available to whoever needs it later.',
+  },
+  {
+    q: 'Can I embed a Surbias story on my blog?',
+    a: 'Yes. Every story has an embed code in the share menu. The iframe is responsive and uses minimal styling.',
+  },
+  {
+    q: 'Who built Surbias?',
+    a: 'Juan Gori — solo, from Buenos Aires. The full press kit is at /press.',
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+---
+
+<Base
+  title="FAQ — Surbias"
+  description="Frequently asked questions about Surbias: what it is, how it works, who built it, and why we don't have likes."
+  jsonLd={faqJsonLd}
+>
+  <article class="pillar">
+    <header class="pillar-header">
+      <p class="pillar-eyebrow">FAQ</p>
+      <h1>Frequently asked questions</h1>
+      <p class="pillar-subtitle">If you don't see your question, email <a href="mailto:hello@surbias.com">hello@surbias.com</a> — we usually respond within a day.</p>
+    </header>
+
+    <div class="faq-list">
+      {faqs.map((f, idx) => (
+        <details class="faq-item" open={idx < 3}>
+          <summary>{f.q}</summary>
+          <div class="faq-answer">{f.a}</div>
+        </details>
+      ))}
+    </div>
+
+    <div style="margin-top: 2.5rem;">
+      <SupportCTA locale="en" variant="card" />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .pillar {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+    line-height: 1.7;
+  }
+  .pillar-header { margin-bottom: 2rem; }
+  .pillar-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--surbias-warm);
+    margin: 0 0 0.5rem;
+  }
+  .pillar-header h1 {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+    line-height: 1.2;
+  }
+  .pillar-subtitle { color: var(--surbias-text-muted); font-size: 1rem; line-height: 1.55; margin: 0; }
+  .pillar-subtitle a { color: var(--surbias-primary); }
+
+  .faq-list { display: grid; gap: 0.5rem; }
+  .faq-item {
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .faq-item[open] { border-color: var(--surbias-primary); }
+  .faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: var(--surbias-text);
+    position: relative;
+    padding-right: 2.75rem;
+    user-select: none;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: '+';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    color: var(--surbias-text-muted);
+    font-weight: 300;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .faq-item[open] summary::after { transform: translateY(-50%) rotate(45deg); color: var(--surbias-primary); }
+  .faq-item summary:hover { background: var(--surbias-warm-light); }
+  .faq-answer {
+    padding: 0 1.25rem 1.1rem;
+    color: var(--surbias-text);
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+</style>

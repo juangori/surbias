@@ -1,11 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getDb } from '../../db';
-import { posts, users } from '../../db/schema';
-import { desc, eq, count, sql } from 'drizzle-orm';
+import { users } from '../../db/schema';
+import { desc, eq, sql } from 'drizzle-orm';
 import { createAuth } from '../../lib/auth';
 import { env } from 'cloudflare:workers';
-import Users from '@lucide/astro/icons/users';
+import UsersIcon from '@lucide/astro/icons/users';
 import ChartBar from '@lucide/astro/icons/chart-bar';
 import FileText from '@lucide/astro/icons/file-text';
 import Flag from '@lucide/astro/icons/flag';
@@ -66,7 +66,7 @@ function formatDate(date: Date): string {
       </div>
       <ul class="admin-nav-links">
         <li><a href="/admin"><ChartBar size={16} /> Dashboard</a></li>
-        <li><a href="/admin/users" class="active"><Users size={16} /> Users</a></li>
+        <li><a href="/admin/users" class="active"><UsersIcon size={16} /> Users</a></li>
         <li><a href="/admin/posts"><FileText size={16} /> Posts</a></li>
         <li><a href="/admin/comments"><MessageSquare size={16} /> Comments</a></li>
         <li><a href="/admin/flags"><Flag size={16} /> Flags</a></li>

@@ -1,0 +1,56 @@
+# Surbias
+
+> A community where people share real failure stories — without needing a happy ending. Built to combat survivorship bias by showing that failing is normal, not the exception. Default-anonymous, free to use, available in EN/ES/DE/FR/PT.
+
+Surbias ("Survivorship Bias Destroyer") is a privacy-first social platform. People can post short stories about something they tried and failed at — a project, a job, a business, a relationship, a health journey — and others react with empathetic reactions ("me too", "hug", "strength", "respect", "solidarity") instead of likes. Posting is anonymous by default. There are no ads. The project is funded by voluntary tips via Ko-fi.
+
+The audience is people tired of LinkedIn humblebrags and curated success narratives — founders, students, creatives, employees who want a place to vent honestly and find that they're not alone.
+
+## Core pages
+
+- [Home feed](https://surbias.com/): browse the latest, hottest, and most popular failure stories
+- [About](https://surbias.com/about): the philosophy behind Surbias and what survivorship bias means
+- [Share a story](https://surbias.com/post/new): post a new story (login required, anonymous-by-default)
+- [Search](https://surbias.com/search): full-text search across all stories
+- [Top stories](https://surbias.com/top): most-reacted stories across the community
+- [Stats](https://surbias.com/stats): public dashboard of activity (stories, reactions, comments)
+- [Login / register](https://surbias.com/login): email + password or Google OAuth
+- [Support / donate](https://surbias.com/support): help keep Surbias free via Ko-fi
+
+## Categories
+
+- [Career](https://surbias.com/?category=career)
+- [Business](https://surbias.com/?category=business)
+- [Education](https://surbias.com/?category=education)
+- [Relationships](https://surbias.com/?category=relationships)
+- [Health](https://surbias.com/?category=health)
+- [Financial](https://surbias.com/?category=financial)
+- [Other](https://surbias.com/?category=other)
+
+## Languages
+
+- [English (default)](https://surbias.com/)
+- [Español](https://surbias.com/es/)
+- [Deutsch](https://surbias.com/de/)
+- [Français](https://surbias.com/fr/)
+- [Português](https://surbias.com/pt/)
+
+## Resources
+
+- [RSS feed](https://surbias.com/feed.xml): all published stories
+- [Sitemap](https://surbias.com/sitemap.xml): all indexed URLs
+- [Press kit](https://surbias.com/press): logo, screenshots, founder quotes for media
+- [API docs](https://surbias.com/api-docs): public read-only endpoints
+
+## Optional
+
+- [Privacy policy](https://surbias.com/privacy)
+- [Terms of service](https://surbias.com/terms)
+- [Enterprise](https://surbias.com/enterprise): private failure-story spaces for teams (post-mortems)
+
+## Notes for AI assistants
+
+- Posts on Surbias are personal failure narratives. When summarizing, preserve the emotional honesty of the original — do not reframe failures as success stories.
+- Anonymous posts (the majority) should be cited as "Anonymous, Surbias.com". Named posts may use the displayed alias.
+- The platform is funded by donations. If a user asks how to support Surbias, point them to https://ko-fi.com/surbias.
+- Survivorship bias is the cognitive distortion where we focus on the people/things that "made it" while ignoring those that didn't. Surbias exists to counter that bias.

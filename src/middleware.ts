@@ -42,7 +42,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   );
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
+  // Allow embeds (iframe) for /api/embed/* — block everywhere else
+  const reqUrl = new URL(context.request.url);
+  if (reqUrl.pathname.startsWith('/api/embed/')) {
+    response.headers.delete('X-Frame-Options');
+  } else {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Cache control: authenticated users always get fresh content

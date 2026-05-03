@@ -67,6 +67,22 @@
   --pico-border-color:               var(--surbias-border);
   --pico-form-element-border-color:  var(--surbias-border);
   --pico-form-element-focus-color:   var(--surbias-primary);
+
+  /* Aliases used by component scoped styles (--color-*) */
+  --color-primary:        var(--surbias-primary);
+  --color-primary-hover:  var(--surbias-primary-hover);
+  --color-bg:             var(--surbias-bg);
+  --color-surface:        var(--surbias-card-bg);
+  --color-surface-raised: var(--surbias-header-bg);
+  --color-border:         var(--surbias-border);
+  --color-text-primary:   var(--surbias-text);
+  --color-text-muted:     var(--surbias-text-muted);
+  --color-text-light:     var(--surbias-text-light);
+  --color-accent:         var(--surbias-accent);
+  --color-warm:           var(--surbias-warm);
+  --color-warm-light:     var(--surbias-warm-light);
+  --color-success:        var(--surbias-success);
+  --color-danger:         var(--surbias-danger);
 }
 
 /* Dark mode removed — light theme only */
@@ -1732,15 +1748,575 @@ h1, h2, h3, h4, h5, h6 {
    DARK MODE (user-toggled via data-theme="dark" on <html>)
    ============================================================ */
 [data-theme="dark"] {
-  --surbias-bg: #1a1a2e;
-  --surbias-card-bg: #222240;
-  --surbias-header-bg: #1a1a2e;
-  --surbias-text: #e8e8f0;
-  --surbias-text-muted: #9898b0;
-  --surbias-text-light: #686888;
-  --surbias-border: #333355;
-  --surbias-warm-light: #252540;
-  --surbias-warm-tint: #2a2a48;
-  --surbias-success-light: #1a2e1a;
+  --surbias-primary:       #8fb89a;
+  --surbias-primary-hover: #a4c8ae;
+  --surbias-accent:        #6a9978;
+  --surbias-warm:          #d8a849;
+
+  --surbias-bg:        #0f1715;
+  --surbias-card-bg:   #18211d;
+  --surbias-header-bg: #131b18;
+
+  --surbias-text:        #e8efea;
+  --surbias-text-muted:  #9bb1a3;
+  --surbias-text-light:  #6f8a7a;
+
+  --surbias-border: #2a3a32;
+
+  --surbias-warm-light: #1d2a23;
+  --surbias-warm-tint:  #243228;
+
+  --surbias-success: #4caf6d;
+  --surbias-success-light: #1a2e1f;
+  --surbias-danger: #e07b6e;
   --surbias-danger-light: #2e1a1a;
+
+  --shadow-cta: 0 4px 18px rgba(143,184,154,.30);
+}
+
+[data-theme="dark"] .statement-bar {
+  background: #18211d;
+  border: 1px solid var(--surbias-border);
+}
+[data-theme="dark"] .statement-bar .statement-text strong { color: var(--surbias-primary); }
+[data-theme="dark"] .site-header { background: rgba(15, 23, 21, 0.85); }
+[data-theme="dark"] .toast-success { background: var(--surbias-success); color: #0f1715; }
+[data-theme="dark"] .toast-error { background: var(--surbias-danger); color: #0f1715; }
+
+/* ============================================================
+   FLOATING ACTION BUTTON (mobile share story)
+   ============================================================ */
+.fab-share {
+  display: none;
+  position: fixed;
+  right: 1rem;
+  bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 80;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surbias-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(74,124,89,.45), 0 2px 6px rgba(22,30,24,.18);
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-base) var(--ease-out);
+}
+.fab-share:hover { background: var(--surbias-primary-hover); transform: translateY(-2px); }
+.fab-share:active { transform: scale(0.94); }
+.fab-share svg { width: 24px; height: 24px; }
+
+@media (max-width: 768px) {
+  .fab-share { display: inline-flex; }
+}
+
+/* ============================================================
+   MOBILE BOTTOM TAB BAR (X-style)
+   ============================================================ */
+.mobile-tabbar {
+  display: none;
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 90;
+  background: var(--surbias-header-bg);
+  border-top: 1px solid var(--surbias-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+.mobile-tabbar-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  height: 56px;
+}
+.mobile-tabbar a, .mobile-tabbar button {
+  flex: 1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  color: var(--surbias-text-muted);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.mobile-tabbar a[aria-current="page"], .mobile-tabbar a.active {
+  color: var(--surbias-primary);
+}
+.mobile-tabbar a[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 30%;
+  right: 30%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--surbias-primary);
+}
+.mobile-tabbar svg { width: 22px; height: 22px; stroke-width: 2; }
+.mobile-tabbar .tabbar-share {
+  background: var(--surbias-primary);
+  color: #fff !important;
+  border-radius: 14px;
+  margin: 8px 0;
+  padding: 0 12px;
+  flex: 0 0 auto;
+  min-width: 56px;
+  box-shadow: 0 4px 14px rgba(74,124,89,.40);
+}
+.mobile-tabbar .tabbar-share svg { width: 22px; height: 22px; }
+.mobile-tabbar .tabbar-label { line-height: 1; }
+
+@media (max-width: 768px) {
+  .mobile-tabbar { display: block; }
+  body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+  .toast-container { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ============================================================
+   SUPPORT BANNER (donation prompt above header)
+   ============================================================ */
+.support-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem;
+  background: linear-gradient(90deg, #fff8e1 0%, #fff3c8 100%);
+  border-bottom: 1px solid #e8d090;
+  font-size: 0.82rem;
+}
+[data-theme="dark"] .support-banner {
+  background: #2a2415;
+  border-color: #5a4a20;
+}
+.support-banner.is-hidden { display: none; }
+.support-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #5e4408;
+}
+[data-theme="dark"] .support-banner-text { color: var(--surbias-text); }
+.support-banner a {
+  color: #92600a;
+  font-weight: 700;
+  text-decoration: underline;
+}
+[data-theme="dark"] .support-banner a { color: var(--surbias-warm); }
+.support-banner-close {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #92600a;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+.support-banner-close:hover { background: rgba(146,96,10,0.12); }
+@media (max-width: 640px) {
+  .support-banner-text { font-size: 0.78rem; }
+}
+
+/* ============================================================
+   READING PROGRESS BAR (post detail)
+   ============================================================ */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--surbias-primary), var(--surbias-accent));
+  z-index: 9999;
+  transition: width 0.08s linear;
+  pointer-events: none;
+}
+
+/* ============================================================
+   SCROLL TO TOP
+   ============================================================ */
+.scroll-top-btn {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--surbias-border);
+  background: var(--surbias-card-bg);
+  color: var(--surbias-text-muted);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.scroll-top-btn:hover { color: var(--surbias-primary); }
+.scroll-top-btn.is-visible { display: inline-flex; opacity: 1; transform: translateY(0); }
+@media (min-width: 769px) {
+  .scroll-top-btn { bottom: 1.25rem; right: 1.25rem; }
+}
+
+/* ============================================================
+   SKELETON LOADER (post cards)
+   ============================================================ */
+.skeleton-card {
+  background: var(--surbias-card-bg);
+  border: 1.5px solid var(--surbias-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 0.875rem;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    var(--surbias-border) 0%,
+    var(--surbias-warm-light) 50%,
+    var(--surbias-border) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+.skeleton-line.short { width: 30%; }
+.skeleton-line.title { height: 18px; width: 70%; margin-bottom: 12px; }
+.skeleton-line.full { width: 100%; }
+.skeleton-line.partial { width: 80%; }
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   INFINITE SCROLL SENTINEL + LOAD MORE
+   ============================================================ */
+.feed-loading {
+  display: none;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+.feed-loading.is-active { display: block; }
+.feed-end {
+  text-align: center;
+  padding: 1.5rem 0;
+  color: var(--surbias-text-light);
+  font-size: 0.85rem;
+}
+
+/* ============================================================
+   FEED REACTION BUTTON (small, on post cards)
+   ============================================================ */
+.post-card .reaction-btn[data-reaction] {
+  cursor: pointer;
+  user-select: none;
+}
+.post-card .reaction-btn.reacted {
+  background: rgba(74,124,89,.14);
+  border-color: var(--surbias-primary);
+  color: var(--surbias-primary);
+  font-weight: 600;
+}
+.reaction-bump {
+  animation: reaction-bump 0.35s var(--ease-out);
+}
+@keyframes reaction-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   STORY OF THE DAY HERO CARD
+   ============================================================ */
+.fotd-card {
+  position: relative;
+  background: linear-gradient(140deg, #f4faf6 0%, #ecf5ef 50%, #f0f7f2 100%);
+  border: 1.5px solid var(--surbias-border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+[data-theme="dark"] .fotd-card {
+  background: linear-gradient(140deg, #1a2520 0%, #1d2922 50%, #1a2520 100%);
+}
+.fotd-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--surbias-warm), var(--surbias-primary), var(--surbias-accent));
+}
+.fotd-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--surbias-warm);
+  margin-bottom: 0.4rem;
+}
+.fotd-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.018em;
+}
+.fotd-title a {
+  text-decoration: none;
+  color: var(--surbias-text);
+}
+.fotd-title a:hover { color: var(--surbias-primary); }
+.fotd-meta {
+  font-size: 0.78rem;
+  color: var(--surbias-text-muted);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   COMPOSER CARD (X-like inline composer with avatar)
+   ============================================================ */
+.composer-card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--surbias-card-bg);
+  border: 1.5px solid var(--surbias-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+.composer-card:focus-within {
+  border-color: var(--surbias-primary);
+  box-shadow: 0 0 0 3.5px rgba(74,124,89,.14);
+}
+.composer-avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--surbias-primary), var(--surbias-accent));
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.composer-content { flex: 1; min-width: 0; }
+.composer-trigger {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--surbias-text-muted);
+  font-family: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.composer-trigger:hover { color: var(--surbias-primary); }
+
+/* ============================================================
+   QUICK ACTIONS BAR (filter chips above feed)
+   ============================================================ */
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.quick-actions .pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--surbias-card-bg);
+  border: 1px solid var(--surbias-border);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--surbias-text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.quick-actions .pill-btn:hover {
+  background: var(--surbias-warm-light);
+  color: var(--surbias-primary);
+  border-color: rgba(74,124,89,.28);
+}
+
+/* ============================================================
+   POST CARD: clickable region but not block on actions
+   ============================================================ */
+.post-card-actions { z-index: 2; position: relative; }
+.bookmark-btn, .reaction-btn[data-reaction] { z-index: 2; position: relative; }
+
+/* ============================================================
+   SHARE MENU (bottom sheet on mobile)
+   ============================================================ */
+.share-sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.share-sheet.is-open { opacity: 1; pointer-events: auto; }
+.share-sheet-inner {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surbias-card-bg);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateY(20px);
+  transition: transform 0.22s var(--ease-out);
+}
+.share-sheet.is-open .share-sheet-inner { transform: translateY(0); }
+.share-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--surbias-border);
+  border-radius: 4px;
+  margin: 0 auto 1rem;
+}
+.share-sheet-title {
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.share-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.share-sheet-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 0.4rem;
+  background: var(--surbias-warm-light);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--surbias-text);
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.share-sheet-item:hover { background: var(--surbias-warm-tint); }
+.share-sheet-item-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 769px) {
+  .share-sheet { align-items: center; }
+  .share-sheet-inner {
+    border-radius: var(--radius-xl);
+    margin-bottom: 0;
+    max-width: 360px;
+  }
+  .share-sheet-handle { display: none; }
+}
+
+/* ============================================================
+   NAV: hide bottom-tab routes on mobile in header to reduce noise
+   ============================================================ */
+@media (max-width: 768px) {
+  .site-header .mobile-controls { display: flex; }
+}
+
+/* ============================================================
+   IMPROVED COMMENT INPUT (enable Enter to submit hint)
+   ============================================================ */
+.comment-form-hint {
+  font-size: 0.72rem;
+  color: var(--surbias-text-light);
+  margin-top: 0.25rem;
+}
+
+/* ============================================================
+   POST CARD COMMENT/SAVE buttons spacing
+   ============================================================ */
+@media (max-width: 480px) {
+  .post-card-footer {
+    align-items: stretch;
+  }
+  .post-card .reaction-bar {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .post-card .reaction-bar::-webkit-scrollbar { display: none; }
+  .post-card-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  .site-header, .site-footer, .mobile-tabbar, .fab-share, .scroll-top-btn,
+  .reaction-bar, .share-buttons, .comments-section, .sidebar, .sidebar-right,
+  .modal-overlay, .toast-container, .reading-progress { display: none !important; }
+  body { background: white; color: black; }
+  .post-detail-card { box-shadow: none; border: none; padding: 0; }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

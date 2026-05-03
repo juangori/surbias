@@ -3,15 +3,14 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { getDb } from '../db';
 import { users, sessions, accounts, verifications } from '../db/schema';
 import { hashPassword, verifyPassword } from './password';
-import { sendEmail, passwordResetEmail, verificationEmail } from './email';
+import { sendEmail, emailEnabled, passwordResetEmail, verificationEmail } from './email';
 
 export function createAuth(env: CloudflareEnv) {
   if (!env.BETTER_AUTH_SECRET) {
     throw new Error('[auth] BETTER_AUTH_SECRET is not set. Add it via: wrangler secret put BETTER_AUTH_SECRET');
   }
   const db = getDb(env.DB);
-  const resendKey = env.RESEND_API_KEY;
-  const fromEmail = env.FROM_EMAIL || 'Surbias <noreply@surbias.com>';
+  const hasEmail = emailEnabled(env);
 
   return betterAuth({
     database: drizzleAdapter(db, {
@@ -32,9 +31,9 @@ export function createAuth(env: CloudflareEnv) {
         verify: verifyPassword,
       },
       sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-        if (resendKey) {
+        if (hasEmail) {
           const email = passwordResetEmail(url);
-          await sendEmail(resendKey, fromEmail, { to: user.email, ...email });
+          await sendEmail(env, { to: user.email, ...email });
         } else {
           console.log(`[PASSWORD RESET] User: ${user.email}, URL: ${url}`);
         }
@@ -42,14 +41,14 @@ export function createAuth(env: CloudflareEnv) {
     },
     emailVerification: {
       sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
-        if (resendKey) {
+        if (hasEmail) {
           const email = verificationEmail(url);
-          await sendEmail(resendKey, fromEmail, { to: user.email, ...email });
+          await sendEmail(env, { to: user.email, ...email });
         } else {
           console.log(`[EMAIL VERIFY] User: ${user.email}, URL: ${url}`);
         }
       },
-      sendOnSignUp: !!resendKey,
+      sendOnSignUp: hasEmail,
     },
     socialProviders: {
       google: {

@@ -1,0 +1,125 @@
+---
+import Base from '../../layouts/Base.astro';
+import SupportCTA from '../../components/SupportCTA.astro';
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'Surbias vs LinkedIn: Where to Share What Actually Happened',
+  description: 'A side-by-side comparison of Surbias and LinkedIn — and which one to use depending on whether you want a job or you want the truth.',
+  image: 'https://surbias.com/logo.png',
+  datePublished: '2025-02-01',
+  dateModified: new Date().toISOString().split('T')[0],
+  author: { '@type': 'Organization', name: 'Surbias' },
+  publisher: { '@type': 'Organization', name: 'Surbias', logo: { '@type': 'ImageObject', url: 'https://surbias.com/logo.png' } },
+};
+
+const rows = [
+  { label: 'Identity', surbias: 'Anonymous by default', linkedin: 'Real name + photo + employer' },
+  { label: 'Audience', surbias: 'Strangers who\'ve been there', linkedin: 'Coworkers, clients, recruiters' },
+  { label: 'Reactions', surbias: '"me too", "hug", "strength", "respect", "solidarity"', linkedin: 'Like, celebrate, support, love, insightful, funny' },
+  { label: 'Content norm', surbias: 'Failure stories. No happy ending required.', linkedin: 'Success stories with optional "lessons learned" packaging' },
+  { label: 'Engagement loop', surbias: 'Catharsis + finding others who relate', linkedin: 'Likes, follower count, recruiter inbound' },
+  { label: 'Cost', surbias: 'Free (donation-funded)', linkedin: 'Free with paid premium' },
+  { label: 'Ads', surbias: 'None', linkedin: 'Yes' },
+  { label: 'Algorithm', surbias: 'Chronological + community reactions', linkedin: 'Engagement-optimized' },
+  { label: 'Career risk of posting honestly', surbias: 'None (anonymous)', linkedin: 'Real' },
+];
+---
+
+<Base
+  title="Surbias vs LinkedIn: Where to Share What Actually Happened"
+  description="LinkedIn is for the version of your career you want recruiters to see. Surbias is for the version you can\'t post on LinkedIn. Side-by-side comparison."
+  jsonLd={articleJsonLd}
+>
+  <article class="pillar">
+    <header class="pillar-header">
+      <p class="pillar-eyebrow">Comparison</p>
+      <h1>Surbias vs LinkedIn</h1>
+      <p class="pillar-subtitle">Different jobs. Use both. Just don't confuse them.</p>
+    </header>
+
+    <p>LinkedIn is the world's largest professional performance theater. People post the version of their career they want recruiters and clients to see — promotions, milestones, "humbled and excited to share" announcements. That's not bad; it's <em>useful</em>. It's just not honest.</p>
+    <p>Surbias is the opposite. It's where you write the part you can't post on LinkedIn — the project that flopped, the job you got fired from, the business that ate two years and your savings. Anonymous by default. No follower count. No algorithm rewarding humblebrags.</p>
+
+    <table class="vs-table">
+      <thead>
+        <tr><th></th><th>Surbias</th><th>LinkedIn</th></tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr>
+            <th scope="row">{r.label}</th>
+            <td class="vs-good">{r.surbias}</td>
+            <td>{r.linkedin}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <h2>When to use LinkedIn</h2>
+    <ul>
+      <li>Looking for a job or freelance work</li>
+      <li>Building a personal brand for your industry</li>
+      <li>Sharing a milestone you actually want recruiters to see</li>
+      <li>Networking with people who could hire you</li>
+    </ul>
+
+    <h2>When to use Surbias</h2>
+    <ul>
+      <li>You shut down a project and want to process it without performing optimism</li>
+      <li>You got fired and the LinkedIn "open to work" framing makes you nauseous</li>
+      <li>You\'re reading too many success stories and starting to feel like the exception</li>
+      <li>You want to read what people are actually going through (not what they\'re posting)</li>
+    </ul>
+
+    <section class="pillar-callout">
+      <h2 style="margin-top:0;">The honest take</h2>
+      <p>LinkedIn isn\'t the enemy. It\'s a tool that does what tools do — what you measure, you optimize. LinkedIn measures engagement, so people post engaging stuff, which means polished wins. That\'s fine.</p>
+      <p>The problem is when LinkedIn is the <em>only</em> story you read about other people\'s careers. Then you start to think failure is rare. It isn\'t. It\'s the rule. Surbias is just the place to see the rule.</p>
+      <p style="margin-top:1.25rem;"><a href="/post/new" class="btn-cta">Share something that didn\'t work</a></p>
+    </section>
+
+    <SupportCTA locale="en" variant="card" />
+
+    <footer class="pillar-footer">
+      <p>Related:</p>
+      <ul>
+        <li><a href="/survivorship-bias">Survivorship bias: full guide</a></li>
+        <li><a href="/famous-failures">17 famous failures (and why the list lies)</a></li>
+        <li><a href="/about">About Surbias</a></li>
+      </ul>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .pillar { max-width: 760px; margin: 0 auto; padding: 1.25rem 1rem 3rem; line-height: 1.7; }
+  .pillar-header { margin-bottom: 1.75rem; }
+  .pillar-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--surbias-warm); margin: 0 0 0.5rem; }
+  .pillar-header h1 { font-size: clamp(1.85rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; line-height: 1.2; }
+  .pillar-subtitle { color: var(--surbias-text-muted); font-size: 1.05rem; line-height: 1.55; margin: 0; }
+  .pillar h2 { font-size: 1.35rem; font-weight: 700; margin: 2rem 0 0.75rem; }
+  .pillar p { margin-bottom: 1rem; }
+  .pillar ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+  .pillar li { margin-bottom: 0.5rem; }
+
+  .vs-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0 2rem; background: var(--surbias-card-bg); border: 1px solid var(--surbias-border); border-radius: var(--radius-md); overflow: hidden; font-size: 0.92rem; }
+  .vs-table th, .vs-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid var(--surbias-border); vertical-align: top; }
+  .vs-table thead th { background: var(--surbias-warm-light); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--surbias-text-muted); }
+  .vs-table thead th:nth-child(2) { color: var(--surbias-primary); }
+  .vs-table tbody th { width: 30%; font-weight: 600; color: var(--surbias-text-muted); font-size: 0.85rem; }
+  .vs-table tr:last-child th, .vs-table tr:last-child td { border-bottom: none; }
+  .vs-good { color: var(--surbias-text); font-weight: 500; background: rgba(74,124,89,0.05); }
+
+  .pillar-callout { background: linear-gradient(140deg, #f4faf6, #ecf5ef); border: 1.5px solid var(--surbias-border); border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; margin: 2rem 0; }
+  [data-theme="dark"] .pillar-callout { background: linear-gradient(140deg, #1a2520, #1d2922); }
+  .pillar-footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--surbias-border); color: var(--surbias-text-muted); }
+  .pillar-footer ul { padding-left: 1.25rem; }
+  .pillar-footer a { color: var(--surbias-primary); }
+
+  @media (max-width: 640px) {
+    .vs-table { font-size: 0.85rem; }
+    .vs-table th, .vs-table td { padding: 0.65rem 0.75rem; }
+  }
+</style>

@@ -1,13 +1,21 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getLocaleFromUrl, t } from '../../i18n';
+import { getLocaleFromUrl, t, localePath } from '../../i18n';
 import { Search } from '@lucide/astro';
+import SupportCTA from '../SupportCTA.astro';
 
 const locale = getLocaleFromUrl(Astro.url);
 const i = t(locale);
+
+const ctaShare: Record<string, string> = {
+  en: 'Share your story', es: 'Compartí tu historia', de: 'Teile deine Geschichte', fr: 'Partage ton histoire', pt: 'Compartilha a tua história',
+};
+const learnMore: Record<string, string> = {
+  en: 'Learn about survivorship bias →', es: 'Más sobre el sesgo de supervivencia →', de: 'Mehr zum Survivorship-Bias →', fr: 'En savoir plus sur le biais du survivant →', pt: 'Saiba mais sobre viés de sobrevivência →',
+};
 ---
 
-<Base title={i.about.title}>
+<Base title={i.about.title} description={i.about.p1}>
   <div class="about-content">
     <div class="about-header">
       <Search size={40} class="about-icon" aria-hidden="true" />
@@ -19,6 +27,15 @@ const i = t(locale);
       <p>{i.about.p3}</p>
       <p>{i.about.p4}</p>
       <p class="about-highlight">{i.about.p5}</p>
+
+      <div class="about-actions">
+        <a href={localePath(locale, '/post/new')} class="btn-cta">{ctaShare[locale] || ctaShare.en}</a>
+        <a href="/survivorship-bias" class="about-link">{learnMore[locale] || learnMore.en}</a>
+      </div>
+
+      <div style="margin-top: 2.5rem;">
+        <SupportCTA locale={locale} variant="card" />
+      </div>
     </div>
   </div>
 </Base>
@@ -27,6 +44,20 @@ const i = t(locale);
   .about-icon {
     display: block;
     margin-bottom: 0.75rem;
-    color: var(--color-primary);
+    color: var(--surbias-primary);
   }
+  .about-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+  }
+  .about-link {
+    color: var(--surbias-primary);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .about-link:hover { text-decoration: underline; }
 </style>
