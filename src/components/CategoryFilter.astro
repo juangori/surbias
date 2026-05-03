@@ -64,6 +64,14 @@ const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
             <span class="sidebar-cat-label">{i.categories[cat as keyof typeof i.categories]}</span>
             {count !== undefined && <span class="sidebar-cat-count">{count}</span>}
           </a>
+          <a
+            href={`/${cat}`}
+            class="cat-page-link"
+            aria-label={`View dedicated ${cat} page`}
+            title={`View dedicated ${cat} page`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
           {isLoggedIn && (
             <button
               class:list={['cat-follow-btn', { 'is-following': isFollowed }]}
@@ -116,6 +124,33 @@ const totalCount = Object.values(counts).reduce((s, v) => s + v, 0);
 
   .sidebar-cat-row .sidebar-cat-item {
     flex: 1;
+  }
+
+  .cat-page-link {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: var(--surbias-text-light);
+    border-radius: 4px;
+    text-decoration: none;
+    margin-left: 2px;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+  }
+  .sidebar-cat-row:hover .cat-page-link,
+  .sidebar-cat-row:focus-within .cat-page-link {
+    opacity: 1;
+  }
+  .cat-page-link:hover {
+    color: var(--surbias-primary);
+    background: var(--surbias-warm-light);
+  }
+  /* On mobile (where hover doesn't exist), always show the arrow */
+  @media (max-width: 768px) {
+    .cat-page-link { opacity: 1; }
   }
 
   .cat-follow-btn {

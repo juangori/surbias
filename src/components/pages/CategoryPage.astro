@@ -1,0 +1,630 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import SupportCTA from '../../components/SupportCTA.astro';
+import { getDb } from '../../db';
+import { posts, postTags, tags } from '../../db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { postWithAuthor } from '../../lib/post-query';
+import { t, localePath } from '../../i18n';
+
+interface Props {
+  category: string;
+  emoji: string;
+  accent: string;       // hex, e.g. #4a7c59
+  accentSoft: string;   // hex (lighter, used for hero gradient endpoint)
+  accentInk: string;    // hex (text-on-soft-bg)
+  eyebrow: string;
+  hero: string;         // big H1
+  lede: string;         // sub-hero one-liner
+  intro: string[];      // 2-3 short paragraphs
+  prompt: string;       // category-specific prompt question
+  metaTitle: string;
+  metaDescription: string;
+}
+
+const {
+  category,
+  emoji,
+  accent,
+  accentSoft,
+  accentInk,
+  eyebrow,
+  hero,
+  lede,
+  intro,
+  prompt,
+  metaTitle,
+  metaDescription,
+} = Astro.props;
+
+const locale = 'en' as const;
+const i = t(locale);
+const db = getDb(env.DB);
+
+const where = and(
+  eq(posts.status, 'published'),
+  eq(posts.locale, locale),
+  eq(posts.category, category),
+);
+
+// First page of results (20)
+const PER_PAGE = 20;
+const results = await db
+  .select(postWithAuthor)
+  .from(posts)
+  .where(where)
+  .orderBy(desc(posts.createdAt))
+  .limit(PER_PAGE);
+
+// Total count for this category
+const countRow = await db
+  .select({ count: sql<number>`count(*)` })
+  .from(posts)
+  .where(where);
+const total = countRow[0]?.count || 0;
+const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+
+// Total reactions in this category
+const reactionsRow = await db
+  .select({
+    sum: sql<number>`COALESCE(SUM(
+      COALESCE(json_extract(${posts.reactionCounts}, '$.metoo'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.hug'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.strength'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.respect'), 0) +
+      COALESCE(json_extract(${posts.reactionCounts}, '$.solidarity'), 0)
+    ), 0)`,
+  })
+  .from(posts)
+  .where(where);
+const totalReactions = reactionsRow[0]?.sum || 0;
+
+// Top tag for this category
+const topTagRow = await db
+  .select({
+    name: tags.name,
+    count: sql<number>`COUNT(${postTags.id})`,
+  })
+  .from(postTags)
+  .innerJoin(posts, eq(postTags.postId, posts.id))
+  .innerJoin(tags, eq(postTags.tagId, tags.id))
+  .where(and(
+    eq(posts.status, 'published'),
+    eq(posts.locale, locale),
+    eq(posts.category, category),
+  ))
+  .groupBy(tags.name)
+  .orderBy(sql`COUNT(${postTags.id}) DESC`)
+  .limit(1);
+const topTag = topTagRow[0]?.name || null;
+
+// CollectionPage JSON-LD
+const sampleItems = results.slice(0, 10).map((p, idx) => {
+  const path = p.slug ? `/post/${p.slug}-${p.id}` : `/post/${p.id}`;
+  return {
+    '@type': 'ListItem',
+    position: idx + 1,
+    url: `https://surbias.com${path}`,
+    name: p.title,
+  };
+});
+
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: metaTitle,
+  description: metaDescription,
+  url: `https://surbias.com/${category}`,
+  inLanguage: 'en',
+  isPartOf: {
+    '@type': 'WebSite',
+    name: 'Surbias',
+    url: 'https://surbias.com',
+  },
+  mainEntity: {
+    '@type': 'ItemList',
+    name: hero,
+    numberOfItems: total,
+    itemListElement: sampleItems,
+  },
+};
+
+const newPostHref = localePath(locale, `/post/new?category=${category}`);
+---
+
+<Base
+  title={metaTitle}
+  description={metaDescription}
+  jsonLd={collectionJsonLd}
+>
+  <div class={`cat-page cat-${category}`}>
+    <!-- Hero -->
+    <header class="cat-hero">
+      <div class="cat-hero-inner">
+        <p class="cat-eyebrow">
+          <span class="cat-eyebrow-emoji" aria-hidden="true">{emoji}</span>
+          <span>{eyebrow}</span>
+        </p>
+        <h1 class="cat-hero-title">{hero}</h1>
+        <p class="cat-hero-lede">{lede}</p>
+        <div class="cat-hero-actions">
+          <a href={newPostHref} class="btn-cta cat-cta">Share your {category} story</a>
+          <a href={`/?category=${category}`} class="cat-secondary-link">Browse in your language →</a>
+        </div>
+      </div>
+      <div class="cat-hero-decor" aria-hidden="true"></div>
+    </header>
+
+    <!-- Stats -->
+    <section class="cat-stats" aria-label="Category stats">
+      <div class="cat-stat">
+        <span class="cat-stat-num">{total}</span>
+        <span class="cat-stat-label">stories</span>
+      </div>
+      <div class="cat-stat">
+        <span class="cat-stat-num">{totalReactions}</span>
+        <span class="cat-stat-label">reactions</span>
+      </div>
+      <div class="cat-stat">
+        <span class="cat-stat-num">{topTag ? `#${topTag}` : '—'}</span>
+        <span class="cat-stat-label">top tag</span>
+      </div>
+    </section>
+
+    <!-- Intro copy -->
+    <section class="cat-intro">
+      {intro.map((p) => <p>{p}</p>)}
+    </section>
+
+    <!-- Category prompt -->
+    <section class="cat-prompt">
+      <p class="cat-prompt-label">A question for you</p>
+      <p class="cat-prompt-q">"{prompt}"</p>
+      <a href={newPostHref} class="cat-prompt-cta">Answer it →</a>
+    </section>
+
+    <!-- Section divider -->
+    <div class="cat-divider" role="presentation"></div>
+
+    <!-- Feed header -->
+    <div class="cat-feed-header">
+      <h2 class="cat-feed-title">Latest in {eyebrow}</h2>
+      <span class="cat-feed-count">{total} total</span>
+    </div>
+
+    <!-- Feed -->
+    <div
+      id="posts-container"
+      class="cat-feed"
+      data-category={category}
+      data-current-page="1"
+      data-total-pages={totalPages}
+      data-reaction-labels={JSON.stringify(i.reactions)}
+      aria-live="polite"
+    >
+      <div class="posts-grid">
+        {results.length === 0 ? (
+          <div class="empty-state">
+            <p class="empty-state-text">No stories here yet. Be the first to break the silence.</p>
+            <a href={newPostHref} class="btn-cta" style="font-size: 0.85rem;">Share your story</a>
+          </div>
+        ) : (
+          results.map((post) => <PostCard locale={locale} post={post} />)
+        )}
+      </div>
+
+      <!-- Infinite scroll loader -->
+      <div class="feed-loading" id="feed-loading">
+        <div class="skeleton-card">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line title"></div>
+          <div class="skeleton-line full"></div>
+          <div class="skeleton-line partial"></div>
+        </div>
+      </div>
+      <div id="feed-sentinel" style="height: 1px;"></div>
+    </div>
+
+    <!-- Bottom CTA: share in this category -->
+    <section class="cat-bottom-cta">
+      <h2 class="cat-bottom-title">Got one of these?</h2>
+      <p class="cat-bottom-sub">There's no happy ending required. Just write what happened.</p>
+      <a href={newPostHref} class="btn-cta cat-cta">Share your {category} story</a>
+    </section>
+
+    <!-- Support -->
+    <div style="margin-top: 1.5rem;">
+      <SupportCTA locale={locale} variant="card" />
+    </div>
+  </div>
+</Base>
+
+<script is:inline define:vars={{ categorySlug: category }}>
+  // Per-page infinite scroll, scoped to this category
+  (() => {
+    function getLocale() {
+      return document.documentElement.lang || 'en';
+    }
+    function getLocalePath(path) {
+      const l = getLocale();
+      return l === 'en' ? path : `/${l}${path}`;
+    }
+    function timeLabels() {
+      const lang = document.documentElement.lang || 'en';
+      const m = {
+        en: { min: 'min', hour: 'h', day: 'd', month: 'mo' },
+        es: { min: 'min', hour: 'h', day: 'd', month: 'me' },
+        de: { min: 'Min', hour: 'Std', day: 'T', month: 'Mo' },
+        fr: { min: 'min', hour: 'h', day: 'j', month: 'mo' },
+        pt: { min: 'min', hour: 'h', day: 'd', month: 'me' },
+      };
+      return m[lang] || m.en;
+    }
+    function timeAgo(createdAtMs) {
+      const { min, hour, day, month } = timeLabels();
+      const seconds = Math.floor((Date.now() - createdAtMs) / 1000);
+      if (seconds < 60) return `< 1 ${min}`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} ${min}`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}${hour}`;
+      if (seconds < 2592000) return `${Math.floor(seconds / 86400)}${day}`;
+      return `${Math.floor(seconds / 2592000)}${month}`;
+    }
+    function toEpochMs(value) {
+      if (value == null) return Date.now();
+      if (typeof value === 'number') return value < 1e12 ? value * 1000 : value;
+      const n = Number(value);
+      if (!Number.isNaN(n) && n > 0) return n < 1e12 ? n * 1000 : n;
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? Date.now() : parsed;
+    }
+    function getReactionLabels() {
+      const c = document.getElementById('posts-container');
+      if (c?.dataset.reactionLabels) {
+        try { return JSON.parse(c.dataset.reactionLabels); } catch (_) {}
+      }
+      return { metoo: 'Me too', hug: 'Hug', strength: 'Strength', respect: 'Respect', solidarity: 'Solidarity' };
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function renderCard(post) {
+      const createdAtMs = toEpochMs(post.createdAt);
+      const reactions = JSON.parse(post.reactionCounts || '{}');
+      const bodyPreview = post.body.length > 220 ? post.body.slice(0, 220) + '…' : post.body;
+      const categoryLabel = post.category.charAt(0).toUpperCase() + post.category.slice(1);
+      const authorName = post.userName || post.user_name;
+      const author = post.isAnonymous ? '---' : (authorName || '---');
+      const slugPath = post.slug ? `/post/${post.slug}-${post.id}` : `/post/${post.id}`;
+      const postPath = getLocalePath(slugPath);
+      const fullUrl = window.location.origin + postPath;
+      const comments = post.commentCount ?? post.comment_count ?? 0;
+      const rl = getReactionLabels();
+      const reactionsHtml = ['metoo','hug','strength','respect','solidarity'].map((rt) => `
+        <button class="reaction-btn" type="button" data-reaction="${rt}" data-post-id="${post.id}" title="${escHtml(rl[rt])}" aria-label="${escHtml(rl[rt])}">
+          <span class="reaction-label">${escHtml(rl[rt])}</span>
+          <span class="reaction-count">${reactions[rt] || 0}</span>
+        </button>`).join('');
+      return `
+        <article class="post-card" data-post-card data-post-id="${post.id}" data-post-title="${escHtml(post.title)}" data-post-url="${escHtml(fullUrl)}">
+          <a href="${postPath}" class="post-card-link" aria-label="${escHtml(post.title)}"></a>
+          <div class="post-card-accent"></div>
+          <div class="post-meta">
+            <span class="category-badge">${categoryLabel}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>${escHtml(author)}</span>
+            <span class="post-meta-sep">&bull;</span>
+            <span>${timeAgo(createdAtMs)}</span>
+          </div>
+          <h3><a href="${postPath}">${escHtml(post.title)}</a></h3>
+          <p class="post-body-preview">${escHtml(bodyPreview)}</p>
+          <div class="post-card-footer">
+            <div class="reaction-bar">${reactionsHtml}</div>
+            <div class="post-card-actions">
+              ${comments > 0 ? `<a href="${postPath}" class="comment-count-link" title="comments"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${comments}</span></a>` : ''}
+              <button class="share-card-btn" data-share-card type="button" aria-label="Share" title="Share">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </button>
+              <button class="bookmark-btn" data-post-id="${post.id}" type="button" aria-label="Save" title="Save">
+                <svg class="bookmark-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    let currentPage = 1;
+    let totalPages = 1;
+    let isLoading = false;
+    let reachedEnd = false;
+
+    const container = document.getElementById('posts-container');
+    if (container) {
+      currentPage = parseInt(container.dataset.currentPage || '1', 10) || 1;
+      totalPages = parseInt(container.dataset.totalPages || '1', 10) || 1;
+      reachedEnd = currentPage >= totalPages;
+    }
+
+    async function loadMore() {
+      if (isLoading || reachedEnd) return;
+      isLoading = true;
+      const loading = document.getElementById('feed-loading');
+      if (loading) loading.classList.add('is-active');
+
+      const nextPage = currentPage + 1;
+      const params = new URLSearchParams({
+        locale: 'en',
+        category: categorySlug,
+        page: String(nextPage),
+      });
+      try {
+        const res = await fetch(`/api/posts?${params}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        const grid = document.querySelector('#posts-container .posts-grid');
+        if (grid && data.posts && data.posts.length) {
+          grid.insertAdjacentHTML('beforeend', data.posts.map(renderCard).join(''));
+        }
+        currentPage = data.page || nextPage;
+        totalPages = data.totalPages || totalPages;
+        reachedEnd = currentPage >= totalPages || (data.posts || []).length === 0;
+        const sentinel = document.getElementById('feed-sentinel');
+        if (sentinel && reachedEnd) sentinel.style.display = 'none';
+      } catch (err) {
+        console.error('Load more failed:', err);
+      } finally {
+        if (loading) loading.classList.remove('is-active');
+        isLoading = false;
+      }
+    }
+
+    const sentinel = document.getElementById('feed-sentinel');
+    if (sentinel && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      }, { rootMargin: '600px 0px' });
+      io.observe(sentinel);
+    }
+  })();
+</script>
+
+<style define:vars={{ accent, accentSoft, accentInk }}>
+  .cat-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0.5rem 0 2rem;
+  }
+
+  /* Hero */
+  .cat-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 2.5rem 1.75rem 2.25rem;
+    border-radius: var(--radius-xl);
+    background:
+      radial-gradient(circle at 90% -10%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 55%),
+      linear-gradient(140deg, var(--accentSoft) 0%, var(--surbias-warm-light) 100%);
+    border: 1.5px solid color-mix(in srgb, var(--accent) 28%, var(--surbias-border));
+    margin-bottom: 1.25rem;
+  }
+  [data-theme="dark"] .cat-hero {
+    background:
+      radial-gradient(circle at 90% -10%, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 55%),
+      linear-gradient(140deg, #1a2520 0%, #1d2922 100%);
+    border-color: color-mix(in srgb, var(--accent) 35%, #2a3833);
+  }
+  .cat-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    border-radius: 0 0 9999px 9999px;
+    opacity: 0.85;
+  }
+  .cat-hero-inner { position: relative; z-index: 1; }
+  .cat-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.85rem;
+    padding: 0.3rem 0.75rem;
+    background: color-mix(in srgb, var(--accent) 14%, #fff);
+    color: var(--accentInk);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: var(--radius-pill);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  [data-theme="dark"] .cat-eyebrow {
+    background: color-mix(in srgb, var(--accent) 18%, #161e18);
+    color: color-mix(in srgb, var(--accent) 70%, #fff);
+  }
+  .cat-eyebrow-emoji { font-size: 1rem; line-height: 1; }
+  .cat-hero-title {
+    font-size: clamp(1.85rem, 5vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.028em;
+    line-height: 1.1;
+    color: var(--surbias-text);
+    margin: 0 0 0.75rem;
+  }
+  .cat-hero-lede {
+    color: var(--surbias-text-muted);
+    font-size: 1.05rem;
+    line-height: 1.55;
+    margin: 0 0 1.4rem;
+    max-width: 56ch;
+  }
+  .cat-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: center;
+  }
+  .cat-cta {
+    background: var(--accent);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .cat-cta:hover {
+    background: color-mix(in srgb, var(--accent) 85%, #000);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .cat-secondary-link {
+    color: var(--accentInk);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .cat-secondary-link:hover { text-decoration: underline; color: var(--accentInk); }
+
+  /* Stats */
+  .cat-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .cat-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 0.5rem;
+    background: var(--surbias-warm-light);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .cat-stat-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    word-break: break-all;
+  }
+  .cat-stat-label {
+    font-size: 0.72rem;
+    color: var(--surbias-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 0.2rem;
+  }
+
+  /* Intro copy */
+  .cat-intro {
+    margin-bottom: 1.5rem;
+    color: var(--surbias-text);
+    line-height: 1.7;
+  }
+  .cat-intro p {
+    margin: 0 0 0.85rem;
+    font-size: 1rem;
+  }
+  .cat-intro p:last-child { margin-bottom: 0; }
+
+  /* Prompt */
+  .cat-prompt {
+    position: relative;
+    padding: 1.4rem 1.5rem 1.4rem 1.75rem;
+    background: color-mix(in srgb, var(--accent) 8%, #fff);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--surbias-border));
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-md);
+    margin-bottom: 1.75rem;
+  }
+  [data-theme="dark"] .cat-prompt {
+    background: color-mix(in srgb, var(--accent) 10%, #161e18);
+  }
+  .cat-prompt-label {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--accentInk);
+  }
+  .cat-prompt-q {
+    margin: 0 0 0.65rem;
+    font-size: 1.1rem;
+    font-style: italic;
+    line-height: 1.45;
+    color: var(--surbias-text);
+  }
+  .cat-prompt-cta {
+    color: var(--accentInk);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+  .cat-prompt-cta:hover { text-decoration: underline; color: var(--accentInk); }
+
+  /* Divider */
+  .cat-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.45;
+    border-radius: 2px;
+    margin: 0 0 1.25rem;
+  }
+
+  /* Feed header */
+  .cat-feed-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+  }
+  .cat-feed-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--surbias-text);
+  }
+  .cat-feed-count {
+    font-size: 0.82rem;
+    color: var(--surbias-text-muted);
+  }
+
+  /* Bottom CTA */
+  .cat-bottom-cta {
+    margin-top: 2rem;
+    padding: 1.75rem 1.5rem;
+    text-align: center;
+    background: linear-gradient(140deg, var(--accentSoft) 0%, var(--surbias-warm-light) 100%);
+    border: 1.5px solid color-mix(in srgb, var(--accent) 25%, var(--surbias-border));
+    border-radius: var(--radius-lg);
+  }
+  [data-theme="dark"] .cat-bottom-cta {
+    background: linear-gradient(140deg, #1a2520 0%, #1d2922 100%);
+    border-color: color-mix(in srgb, var(--accent) 35%, #2a3833);
+  }
+  .cat-bottom-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0 0 0.4rem;
+    color: var(--surbias-text);
+    letter-spacing: -0.02em;
+  }
+  .cat-bottom-sub {
+    color: var(--surbias-text-muted);
+    margin: 0 0 1.1rem;
+    font-size: 0.95rem;
+  }
+
+  /* Per-card accent stripe to tint the existing post-card accent */
+  .cat-page :global(.post-card-accent) {
+    background: var(--accent);
+  }
+
+  @media (max-width: 480px) {
+    .cat-hero { padding: 2rem 1.25rem 1.75rem; }
+    .cat-hero-title { font-size: 1.7rem; }
+    .cat-stats { grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+    .cat-stat-num { font-size: 1.2rem; }
+  }
+</style>

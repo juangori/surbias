@@ -12,45 +12,13 @@ const i = t(locale);
 <footer class="site-footer">
   <div class="footer-grid">
 
-    <!-- Column 1: Nav links -->
-    <nav class="footer-col footer-col--left" aria-label="Footer navigation">
-      <a href={localePath(locale, '/')}>{i.nav.home}</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href={localePath(locale, '/about')}>{i.nav.about}</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href={localePath(locale, '/top')}>Top</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/blog">Blog</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/survivorship-bias">What is survivorship bias?</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/famous-failures">Famous failures</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/faq">FAQ</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/glossary">Glossary</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/tags">Tags</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/random">Random</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/feed.xml">RSS</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="/stats">Stats</a>
-    </nav>
-
-    <!-- Column 2: Brand (center) -->
-    <div class="footer-col footer-col--center">
+    <!-- Column 1: Brand + tagline -->
+    <div class="footer-col footer-col--brand">
       <a href={localePath(locale, '/')} class="footer-brand" aria-label="Surbias home">
-        <img src="/logo.png" alt="" width="24" height="24" loading="lazy" />
+        <img src="/logo.png" alt="" width="28" height="28" loading="lazy" />
         <span class="footer-brand-name">SURBIAS</span>
       </a>
       <p class="footer-tagline">{i.common.footer_text}</p>
-      <p class="footer-copy">© 2026 Surbias</p>
-    </div>
-
-    <!-- Column 3: Support -->
-    <div class="footer-col footer-col--right">
       <a
         href="https://ko-fi.com/surbias"
         target="_blank"
@@ -59,13 +27,46 @@ const i = t(locale);
       >
         ☕ {i.common.footer_coffee}
       </a>
-      <a href={localePath(locale, '/support')} class="footer-legal-link">Why donate?</a>
-      <a href={localePath(locale, '/terms')} class="footer-legal-link">{i.common.terms}</a>
-      <a href={localePath(locale, '/privacy')} class="footer-legal-link">{i.common.privacy}</a>
-      <a href="/press" class="footer-legal-link">Press kit</a>
-      <a href="/api-docs" class="footer-legal-link">API</a>
     </div>
 
+    <!-- Column 2: Explore -->
+    <nav class="footer-col" aria-label="Explore">
+      <h3 class="footer-heading">Explore</h3>
+      <a href={localePath(locale, '/')}>{i.nav.home}</a>
+      <a href={localePath(locale, '/top')}>Top stories</a>
+      <a href="/random">Random story</a>
+      <a href="/tags">Tags</a>
+      <a href={localePath(locale, '/search')}>{i.nav.search}</a>
+    </nav>
+
+    <!-- Column 3: Read -->
+    <nav class="footer-col" aria-label="Read">
+      <h3 class="footer-heading">Read</h3>
+      <a href={localePath(locale, '/about')}>{i.nav.about}</a>
+      <a href="/blog">Blog</a>
+      <a href="/survivorship-bias">What is survivorship bias?</a>
+      <a href="/famous-failures">Famous failures</a>
+      <a href="/glossary">Glossary</a>
+    </nav>
+
+    <!-- Column 4: Site -->
+    <nav class="footer-col" aria-label="Site">
+      <h3 class="footer-heading">Site</h3>
+      <a href={localePath(locale, '/support')}>Why donate?</a>
+      <a href="/faq">FAQ</a>
+      <a href="/press">Press kit</a>
+      <a href="/feed.xml">RSS</a>
+      <a href={localePath(locale, '/stats')}>Stats</a>
+      <a href={localePath(locale, '/terms')} class="footer-meta-link">{i.common.terms}</a>
+      <a href={localePath(locale, '/privacy')} class="footer-meta-link">{i.common.privacy}</a>
+    </nav>
+
+  </div>
+
+  <div class="footer-bottom">
+    <span>© 2026 Surbias</span>
+    <span aria-hidden="true">·</span>
+    <span>Built with care · No ads · No trackers · Funded by readers</span>
   </div>
 </footer>
 
@@ -78,135 +79,119 @@ const i = t(locale);
 
   .footer-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: start;
-    max-width: var(--container-max);
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 2rem;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 2.5rem 2rem 2rem;
-    gap: 1.5rem;
+    padding: 2.5rem 2rem 1.5rem;
   }
 
-  /* Columns */
   .footer-col {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  .footer-col--left {
-    text-align: left;
-    align-items: flex-start;
+  .footer-heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--surbias-text-muted);
+    margin: 0 0 0.4rem;
   }
 
-  .footer-col--center {
-    text-align: center;
-    align-items: center;
-  }
-
-  .footer-col--right {
-    text-align: right;
-    align-items: flex-end;
-  }
-
-  /* Nav links (col 1) */
-  .footer-col--left a {
-    font-size: 0.875rem;
+  .footer-col a {
+    font-size: 0.86rem;
     color: var(--surbias-text-muted);
     text-decoration: none;
     transition: color 0.15s;
+    line-height: 1.4;
   }
+  .footer-col a:hover { color: var(--surbias-primary); }
 
-  .footer-col--left a:hover {
-    color: var(--surbias-primary);
+  .footer-meta-link {
+    margin-top: 0.5rem;
+    font-size: 0.78rem !important;
+    color: var(--surbias-text-light) !important;
   }
+  .footer-meta-link:hover { color: var(--surbias-primary) !important; }
 
-  .footer-sep {
-    color: var(--surbias-border);
-    font-size: 0.75rem;
-    user-select: none;
-    line-height: 1;
-  }
-
-  /* Brand (col 2) */
+  /* Brand column */
+  .footer-col--brand { gap: 0.75rem; }
   .footer-brand {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    margin-bottom: 0.25rem;
   }
-
   .footer-brand-name {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     color: var(--surbias-text);
   }
-
   .footer-tagline {
-    font-size: 0.8125rem;
+    font-size: 0.85rem;
     color: var(--surbias-text-muted);
     margin: 0;
+    line-height: 1.5;
   }
-
-  .footer-copy {
-    font-size: 0.75rem;
-    color: var(--surbias-text-light);
-    margin: 0;
-  }
-
-  /* Ko-fi button (col 3) */
   .footer-coffee {
+    align-self: flex-start;
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 7px 14px;
-    background: #fff8e1;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffe9a8 100%);
     color: #92600a;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: 9999px;
     text-decoration: none;
     border: 1px solid #f0d080;
-    transition: background-color 0.15s, border-color 0.15s;
-    margin-bottom: 0.25rem;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 1px 3px rgba(184,134,11,0.18);
   }
-
   .footer-coffee:hover {
-    background: #fff0b3;
-    border-color: #d4a800;
+    background: linear-gradient(135deg, #ffefb3 0%, #ffdf85 100%);
+    color: #6e4906 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(184,134,11,0.28);
   }
 
-  /* Legal links (col 3) */
-  .footer-legal-link {
-    font-size: 0.8rem;
+  .footer-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 2rem 1.75rem;
+    font-size: 0.78rem;
     color: var(--surbias-text-light);
-    text-decoration: none;
-    transition: color 0.15s;
+    border-top: 1px solid var(--surbias-border);
   }
 
-  .footer-legal-link:hover {
-    color: var(--surbias-primary);
+  /* Tablet */
+  @media (max-width: 900px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem 1.5rem;
+      padding: 2rem 1.5rem 1.25rem;
+    }
+    .footer-col--brand { grid-column: 1 / -1; }
   }
 
-  /* Mobile: stack to single column centered */
-  @media (max-width: 768px) {
+  /* Mobile */
+  @media (max-width: 540px) {
     .footer-grid {
       grid-template-columns: 1fr;
-      text-align: center;
-      padding: 2rem 1.5rem;
+      gap: 1.75rem;
+      padding: 1.75rem 1.25rem 1rem;
     }
-
-    .footer-col--left,
-    .footer-col--right {
-      text-align: center;
-      align-items: center;
-    }
-
-    .footer-col--left {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
+    .footer-bottom {
+      padding: 1rem 1.25rem 1.5rem;
+      font-size: 0.74rem;
     }
   }
 </style>

@@ -6,13 +6,30 @@ import SupportCTA from '../../components/SupportCTA.astro';
 const allPosts = await getCollection('blog', ({ data }) => !data.draft);
 allPosts.sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
 
+const PER_PAGE = 12;
+const url = Astro.url;
+const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+const totalPages = Math.max(1, Math.ceil(allPosts.length / PER_PAGE));
+const safePage = Math.min(page, totalPages);
+const start = (safePage - 1) * PER_PAGE;
+const pagePosts = allPosts.slice(start, start + PER_PAGE);
+
+function readingMinutes(text: string | undefined): number {
+  if (!text) return 3;
+  return Math.max(1, Math.round(text.split(/\s+/).length / 220));
+}
+
+function buildPageHref(p: number): string {
+  return p === 1 ? '/blog' : `/blog?page=${p}`;
+}
+
 const blogJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Blog',
   url: 'https://surbias.com/blog',
   name: 'Surbias blog',
   description: 'Notes on survivorship bias, anti-engagement social design, and what it takes to build a community for failure stories.',
-  blogPost: allPosts.map((p) => ({
+  blogPost: pagePosts.map((p) => ({
     '@type': 'BlogPosting',
     headline: p.data.title,
     description: p.data.description,
@@ -21,10 +38,15 @@ const blogJsonLd = {
     url: `https://surbias.com/blog/${p.id}`,
   })),
 };
+
+// Build window of page numbers to show (max 5)
+const pageWindow: number[] = [];
+const startWindow = Math.max(1, Math.min(safePage - 2, totalPages - 4));
+for (let i = 0; i < Math.min(5, totalPages); i++) pageWindow.push(startWindow + i);
 ---
 
 <Base
-  title="Blog — Surbias"
+  title={safePage === 1 ? 'Blog — Surbias' : `Blog · Page ${safePage} — Surbias`}
   description="Notes from building Surbias: survivorship bias, anti-engagement design, and what it takes to keep a community for failure stories alive."
   jsonLd={blogJsonLd}
 >
@@ -35,26 +57,51 @@ const blogJsonLd = {
       <p class="blog-sub">On survivorship bias, anti-engagement product design, and what it takes to run a social platform on tip-jar money.</p>
     </header>
 
-    <ul class="blog-list">
-      {allPosts.map((post) => (
-        <li class="blog-list-item">
-          <a href={`/blog/${post.id}`} class="blog-list-link">
-            <time class="blog-date" datetime={post.data.publishedAt.toISOString()}>
-              {post.data.publishedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </time>
-            <h2 class="blog-list-title">{post.data.title}</h2>
-            <p class="blog-list-desc">{post.data.description}</p>
-            <div class="blog-list-meta">
-              {post.data.tags.map((t) => <span class="tag-pill">#{t}</span>)}
-              <span style="color:var(--surbias-primary);font-weight:600;">Read →</span>
-            </div>
-          </a>
-        </li>
-      ))}
-    </ul>
+    {pagePosts.length === 0 ? (
+      <p class="blog-empty">No blog posts yet — check back soon.</p>
+    ) : (
+      <ul class="blog-grid">
+        {pagePosts.map((post) => (
+          <li class="blog-card-wrap">
+            <a href={`/blog/${post.id}`} class="blog-card">
+              <div class="blog-card-top">
+                <time class="blog-card-date" datetime={post.data.publishedAt.toISOString()}>
+                  {post.data.publishedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </time>
+                <span class="blog-card-mins">{readingMinutes(post.data.description)} min</span>
+              </div>
+              <h2 class="blog-card-title">{post.data.title}</h2>
+              <p class="blog-card-desc">{post.data.description}</p>
+              <div class="blog-card-foot">
+                {post.data.tags.slice(0, 2).map((t) => <span class="tag-pill">#{t}</span>)}
+                <span class="blog-card-arrow" aria-hidden="true">→</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
 
-    {allPosts.length === 0 && (
-      <p style="color:var(--surbias-text-muted);text-align:center;padding:3rem 1rem;">No blog posts yet — check back soon.</p>
+    {totalPages > 1 && (
+      <nav class="blog-pagination" aria-label="Blog pages">
+        {safePage > 1 && (
+          <a href={buildPageHref(safePage - 1)} class="blog-page-btn" rel="prev">← Previous</a>
+        )}
+        <div class="blog-page-numbers">
+          {pageWindow.map((p) => (
+            <a
+              href={buildPageHref(p)}
+              class:list={['blog-page-num', { active: p === safePage }]}
+              aria-current={p === safePage ? 'page' : undefined}
+            >
+              {p}
+            </a>
+          ))}
+        </div>
+        {safePage < totalPages && (
+          <a href={buildPageHref(safePage + 1)} class="blog-page-btn" rel="next">Next →</a>
+        )}
+      </nav>
     )}
 
     <div style="margin-top: 2.5rem;">
@@ -64,26 +111,196 @@ const blogJsonLd = {
 </Base>
 
 <style>
-  .blog-index { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
-  .blog-header { margin-bottom: 2rem; }
-  .pillar-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--surbias-warm); margin: 0 0 0.5rem; }
-  .blog-header h1 { font-size: clamp(1.85rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; line-height: 1.2; }
-  .blog-sub { color: var(--surbias-text-muted); margin: 0; font-size: 1rem; }
+  .blog-index { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 
-  .blog-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
-  .blog-list-link {
-    display: block;
-    padding: 1.25rem 1.5rem;
+  .blog-header { margin-bottom: 2rem; max-width: 720px; }
+  .pillar-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--surbias-warm);
+    margin: 0 0 0.5rem;
+  }
+  .blog-header h1 {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+    line-height: 1.2;
+  }
+  .blog-sub { color: var(--surbias-text-muted); margin: 0; font-size: 1rem; line-height: 1.55; }
+
+  .blog-empty {
+    text-align: center;
+    color: var(--surbias-text-muted);
+    padding: 3rem 1rem;
+  }
+
+  /* Grid: 3 cols × 4 rows on desktop */
+  .blog-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .blog-card-wrap { display: flex; }
+
+  .blog-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
+    padding: 1.25rem 1.4rem 1.1rem;
     background: var(--surbias-card-bg);
-    border: 1px solid var(--surbias-border);
+    border: 1.5px solid var(--surbias-border);
     border-radius: var(--radius-lg);
     text-decoration: none;
     color: var(--surbias-text);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
     transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
   }
-  .blog-list-link:hover { border-color: var(--surbias-primary); transform: translateY(-2px); box-shadow: var(--shadow-md); color: var(--surbias-text); }
-  .blog-date { font-size: 0.78rem; color: var(--surbias-text-light); font-weight: 600; }
-  .blog-list-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0.4rem 0 0.5rem; line-height: 1.3; color: var(--surbias-text); }
-  .blog-list-desc { color: var(--surbias-text-muted); line-height: 1.6; margin: 0 0 0.75rem; font-size: 0.95rem; }
-  .blog-list-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.82rem; }
+  .blog-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--surbias-primary), var(--surbias-accent));
+    opacity: 0.55;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+  .blog-card:hover {
+    border-color: rgba(143,184,154,.55);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    color: var(--surbias-text);
+  }
+  .blog-card:hover::before { opacity: 1; }
+
+  .blog-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.74rem;
+    color: var(--surbias-text-light);
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+  .blog-card-mins {
+    background: var(--surbias-warm-light);
+    color: var(--surbias-text-muted);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+  }
+  .blog-card-title {
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.55rem;
+    line-height: 1.3;
+    color: var(--surbias-text);
+    /* clamp to 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .blog-card-desc {
+    color: var(--surbias-text-muted);
+    line-height: 1.55;
+    margin: 0 0 1rem;
+    font-size: 0.88rem;
+    flex: 1;
+    /* clamp to 4 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .blog-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--surbias-border);
+  }
+  .blog-card-arrow {
+    margin-left: auto;
+    color: var(--surbias-primary);
+    font-weight: 700;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .blog-card:hover .blog-card-arrow { transform: translateX(3px); }
+
+  /* Pagination */
+  .blog-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .blog-page-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.9rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .blog-page-btn:hover { background: var(--surbias-warm-light); color: var(--surbias-primary); border-color: rgba(74,124,89,.30); }
+
+  .blog-page-numbers { display: flex; gap: 0.25rem; }
+  .blog-page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.6rem;
+    background: var(--surbias-card-bg);
+    border: 1px solid var(--surbias-border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--surbias-text-muted);
+    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .blog-page-num:hover { background: var(--surbias-warm-light); color: var(--surbias-primary); border-color: rgba(74,124,89,.30); }
+  .blog-page-num.active {
+    background: var(--surbias-primary);
+    color: #fff;
+    border-color: var(--surbias-primary);
+    pointer-events: none;
+  }
+
+  /* Tablet: 2 cols */
+  @media (max-width: 920px) {
+    .blog-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Mobile: 1 col */
+  @media (max-width: 600px) {
+    .blog-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+    .blog-card { padding: 1rem 1.15rem; }
+    .blog-card-title { font-size: 1rem; -webkit-line-clamp: 2; }
+    .blog-card-desc { -webkit-line-clamp: 3; }
+  }
 </style>

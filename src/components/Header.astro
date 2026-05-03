@@ -1,7 +1,7 @@
 ---
 import { t, localePath, type Locale } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import { Menu, X, House, Info, LogIn, User, FileText, Search, Bookmark, Settings, Bell } from '@lucide/astro';
+import { Menu, X, House, Info, LogIn, User, FileText, Search, Bookmark, Settings, Bell, BookOpen } from '@lucide/astro';
 
 interface Props {
   locale: Locale;
@@ -30,6 +30,11 @@ const i = t(locale);
       <li>
         <a href={localePath(locale, '/about')} class="nav-link">
           <Info size={15} aria-hidden="true" />{i.nav.about}
+        </a>
+      </li>
+      <li>
+        <a href="/blog" class="nav-link">
+          <BookOpen size={15} aria-hidden="true" />Blog
         </a>
       </li>
       {user ? (
@@ -122,6 +127,11 @@ const i = t(locale);
       <li>
         <a href={localePath(locale, '/about')} class="nav-link">
           <Info size={15} aria-hidden="true" />{i.nav.about}
+        </a>
+      </li>
+      <li>
+        <a href="/blog" class="nav-link">
+          <BookOpen size={15} aria-hidden="true" />Blog
         </a>
       </li>
       {user ? (

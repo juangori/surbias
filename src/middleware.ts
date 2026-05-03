@@ -51,9 +51,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Cache control: authenticated users always get fresh content
+  // Cache control:
+  //   - authenticated users: never cache anywhere
+  //   - anonymous GETs to public pages: edge-cache short, browser must revalidate
+  //   - static assets keep their default long cache (set by Astro/Cloudflare)
   const url2 = new URL(context.request.url);
   const hasSession = context.request.headers.get('cookie')?.includes('better-auth');
+  const ct = response.headers.get('content-type') || '';
+  const isHtml = ct.includes('text/html');
+
   if (hasSession) {
     response.headers.set('Cache-Control', 'private, no-store');
   } else if (
@@ -62,7 +68,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     !url2.pathname.startsWith('/admin/') &&
     !url2.pathname.startsWith('/login')
   ) {
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    if (isHtml) {
+      // Browser MUST revalidate with edge (max-age=0). Edge caches for 60s,
+      // can serve stale up to 5min while revalidating in background.
+      response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=300');
+    } else {
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    }
   }
 
   return response;

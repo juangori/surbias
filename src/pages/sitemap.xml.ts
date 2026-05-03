@@ -28,6 +28,14 @@ const STATIC_GLOBAL_PAGES = [
   { path: '/glossary', priority: '0.6', changefreq: 'monthly' },
   { path: '/tags', priority: '0.6', changefreq: 'daily' },
   { path: '/vs/linkedin', priority: '0.7', changefreq: 'monthly' },
+  // Category landing pages
+  { path: '/career', priority: '0.85', changefreq: 'daily' },
+  { path: '/business', priority: '0.85', changefreq: 'daily' },
+  { path: '/education', priority: '0.85', changefreq: 'daily' },
+  { path: '/relationships', priority: '0.85', changefreq: 'daily' },
+  { path: '/health', priority: '0.85', changefreq: 'daily' },
+  { path: '/financial', priority: '0.85', changefreq: 'daily' },
+  { path: '/other', priority: '0.7', changefreq: 'daily' },
 ];
 
 function localePrefix(locale: string): string {

@@ -463,9 +463,24 @@ for (const p of fotwCandidates) {
       userName?: string | null;
       user_name?: string | null;
       reactionCounts: string;
-      createdAt: number;
+      createdAt: number | string;
       commentCount?: number;
       comment_count?: number;
+    }
+
+    // Robust createdAt → epoch ms. Handles:
+    //  - unix seconds (number, < 10^12)
+    //  - unix ms     (number, >= 10^12)
+    //  - ISO string  (Drizzle SQLite timestamp mode serializes to ISO via JSON)
+    function toEpochMs(value: number | string | null | undefined): number {
+      if (value == null) return Date.now();
+      if (typeof value === 'number') {
+        return value < 1e12 ? value * 1000 : value;
+      }
+      const n = Number(value);
+      if (!Number.isNaN(n) && n > 0) return n < 1e12 ? n * 1000 : n;
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? Date.now() : parsed;
     }
 
     function getReactionLabels(): Record<string, string> {
@@ -485,7 +500,7 @@ for (const p of fotwCandidates) {
     }
 
     function renderCard(post: Post): string {
-      const createdAtMs = post.createdAt * 1000;
+      const createdAtMs = toEpochMs(post.createdAt);
       const reactions = JSON.parse(post.reactionCounts || '{}') as Record<string, number>;
       const bodyPreview = post.body.length > 220 ? post.body.slice(0, 220) + '…' : post.body;
       const categoryLabel =
