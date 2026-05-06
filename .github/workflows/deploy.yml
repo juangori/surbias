@@ -33,8 +33,12 @@ jobs:
 
       - name: Patch wrangler.json for Workers deploy
         env:
-          KV_NAMESPACE_ID: cd7ad2b79517430ab2e9bcc0f469385c
+          KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
         run: |
+          if [ -z "$KV_NAMESPACE_ID" ]; then
+            echo "ERROR: KV_NAMESPACE_ID secret is not set in GitHub Actions."
+            exit 1
+          fi
           node -e "
           const f = 'dist/server/wrangler.json';
           const c = JSON.parse(require('fs').readFileSync(f, 'utf8'));

@@ -3,10 +3,13 @@
 set -e
 
 # ---------------------------------------------------------------------------
-# Configuration — override via environment variables or .env before running
+# Configuration — must be provided via environment or .env before running
 # KV_NAMESPACE_ID: Cloudflare KV namespace ID bound as SESSION in wrangler.json
 # ---------------------------------------------------------------------------
-KV_NAMESPACE_ID="${KV_NAMESPACE_ID:-cd7ad2b79517430ab2e9bcc0f469385c}"
+if [ -z "${KV_NAMESPACE_ID:-}" ]; then
+  echo "ERROR: KV_NAMESPACE_ID is not set. Export it or add it to your .env."
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Validate required wrangler secrets are configured before deploying.
